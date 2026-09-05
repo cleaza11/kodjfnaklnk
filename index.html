@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Tactical Air Track Map - GitHub Pages</title>
+  <title>Tactical Air Track Map - Moving Targets</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1d1a; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
@@ -114,7 +114,7 @@
     <span id="newsStatus" style="color: #71b85b;">ONLINE</span>
   </div>
   <div class="news-content" id="newsContainer">
-    <div class="news-item"><div class="news-channel">Система</div><div>Инициализация прошла успешно. Ожидание данных.</div></div>
+    <div class="news-item"><div class="news-channel">Система</div><div>Активирована интерполяция движения целей.</div></div>
   </div>
 </div>
 
@@ -154,6 +154,7 @@
 <script>
   const API_URL = "polling.json"; 
   let liveInterval = null;
+  let moveInterval = null;
   let isLive = false;
 
   const map = L.map('map', { zoomControl: false }).setView([48.0, 34.5], 7);
@@ -165,32 +166,6 @@
 
   let targets = [];
   let layerObjects = {};
-
-  // Встроенный стартовый набор целей (чтобы карта не была пустой до нажатия LIVE)
-  const initialFallbackData = {
-    "type":"polling_update",
-    "data":{
-      "targets":{
-        "targets":[
-          {"id":"t1786968446933_k8j965izu","type":"SHAHED","lat":45.79405,"lng":32.18504,"bearing":159,"speed":139.1,"altitudeKm":null},
-          {"id":"t1786969426003_1s5ytg9wf","type":"FPV","lat":48.37805,"lng":36.86112,"bearing":329,"speed":398.1,"altitudeKm":null},
-          {"id":"t1786969578609_deeqcu32q","type":"FPV","lat":47.90566,"lng":36.11884,"bearing":288,"speed":282.7,"altitudeKm":null},
-          {"id":"t1786969669708_p7quyxa3v","type":"rocket","lat":51.85845,"lng":32.62573,"bearing":344,"speed":554.5,"altitudeKm":null},
-          {"id":"t1786969787889_c3pk0g6hj","type":"rocket","lat":48.11308,"lng":32.74362,"bearing":257,"speed":582.3,"altitudeKm":null},
-          {"id":"t1786969845946_cytjqmf4k","type":"rocket","lat":46.91375,"lng":32.94998,"bearing":295,"speed":531.4,"altitudeKm":null},
-          {"id":"t1786969988114_1yfe279ym","type":"SHAHED","lat":45.83483,"lng":31.78507,"bearing":289,"speed":342.5,"altitudeKm":null},
-          {"id":"t1786970020157_3kvrq62ol","type":"rocket","lat":47.28789,"lng":33.46832,"bearing":151,"speed":797.3,"altitudeKm":null},
-          {"id":"t1786970088402_pvxigomjq","type":"rocket","lat":49.74479,"lng":36.8356,"bearing":22,"speed":640.8,"altitudeKm":null},
-          {"id":"t1786970112466_m3odk0ea6","type":"kalibr","lat":46.47606,"lng":31.37298,"bearing":302,"speed":830.7,"altitudeKm":null},
-          {"id":"t1786970112466_90md34qzz","type":"rocket","lat":46.36914,"lng":31.46433,"bearing":9,"speed":533.9,"altitudeKm":null}
-        ]
-      },
-      "news":[
-        {"channelTitle":"monitor 1654 | Харків","text":"Реактивний Шахед продовжує рух на Балаклію⚠️"},
-        {"channelTitle":"Сила Громади","text":"Шлюхед з Криму в АЧМ"}
-      ]
-    }
-  };
 
   const icons = {
     'Ударний дрон': `<path d="M 48,10 L 52,10 L 52,30 L 85,75 L 85,85 L 52,85 L 52,90 L 48,90 L 48,85 L 15,85 L 15,75 L 48,30 Z" fill="#ff5252"/>`,
@@ -213,7 +188,7 @@
       html: `<div class="target-container">
         <svg class="target-icon" style="transform: rotate(${t.heading}deg);" viewBox="0 0 100 100">${svgPath}</svg>
         <div class="target-info">
-          <div>${t.type}</div><div>${t.displayId} ПП</div><div>${t.speed} ${t.alt}</div>
+          <div>${t.type}</div><div>${t.displayId} ПП</div><div>${t.speed} км/ч</div>
           <div class="course-wrapper">
             <svg width="22" height="6" viewBox="0 0 22 6"><line x1="0" y1="3" x2="22" y2="3" stroke="#2ba535" stroke-width="2" stroke-dasharray="6,4" /></svg>
             <span>${t.heading}°</span>
@@ -246,7 +221,7 @@
         tr.innerHTML = `
           <td style="color:#ddd;">${t.displayId}</td>
           <td style="color:#888;">A0</td><td style="color:#888;">D0</td>
-          <td>H${t.alt}</td><td>V${t.speed}</td><td>${t.heading}°</td>
+          <td>H${t.alt || 0}</td><td>V${t.speed}</td><td>${t.heading}°</td>
           <td style="color:#888;">1</td>
           <td>
             <button class="btn-action" title="Фокус" onclick="focusTarget('${t.id}')">⌖</button>
@@ -256,6 +231,27 @@
       }
     });
     document.getElementById('activeCounter').innerText = activeCount;
+  }
+
+  // Функция плавного движения целей каждую секунду по их курсу и скорости
+  function animateTargets() {
+    targets.forEach(t => {
+      if (!t.active) return;
+      // Расчет смещения за 1 секунду (Скорость км/ч переводим в км/сек и умножаем на 1 сек)
+      const distancePerSec = (t.speed / 3600); 
+      const [newLat, newLng] = getDestination(t.lat, t.lng, t.heading, distancePerSec);
+      t.lat = newLat;
+      t.lng = newLng;
+
+      // Обновляем позицию маркера на карте без перерисовки всей таблицы
+      if (layerObjects[t.id] && layerObjects[t.id].marker) {
+        layerObjects[t.id].marker.setLatLng([t.lat, t.lng]);
+        const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
+        if (layerObjects[t.id].ray) {
+          layerObjects[t.id].ray.setLatLngs([[t.lat, t.lng], rayEnd]);
+        }
+      }
+    });
   }
 
   function renderNews(newsList) {
@@ -293,8 +289,8 @@
       type: mapApiType(item.type),
       sub: 'ПП',
       alt: item.altitudeKm !== null ? item.altitudeKm : 0,
-      speed: Math.round(item.speed),
-      heading: Math.round(item.bearing),
+      speed: Math.round(item.speed || 300),
+      heading: Math.round(item.bearing || 0),
       lat: item.lat,
       lng: item.lng,
       active: true
@@ -314,7 +310,7 @@
         document.getElementById('newsStatus').style.color = "#71b85b";
       }
     } catch (err) {
-      console.warn("Ошибка сети, используется фолбэк");
+      console.warn("Ошибка сети");
     }
   }
 
@@ -324,7 +320,7 @@
       isLive = true;
       btn.classList.add('live-active');
       fetchLiveData();
-      liveInterval = setInterval(fetchLiveData, 3000);
+      liveInterval = setInterval(fetchLiveData, 4000); // Опрос файла на сервере каждые 4 сек
     } else {
       isLive = false;
       btn.classList.remove('live-active');
@@ -373,11 +369,13 @@
 
   window.clearAll = () => { if (confirm("Очистить все цели?")) { targets = []; render(); } };
 
-  // Инициализация при старте (загружаем начальные цели сразу, не ждем клика)
+  // Запускаем автоматическое движение целей каждую секунду
+  moveInterval = setInterval(animateTargets, 1000);
+
+  // Первичная загрузка данных сразу при открытии
   setTimeout(() => {
-    processApiResponse(initialFallbackData);
+    fetchLiveData();
     map.invalidateSize();
-    fitAllTargets();
   }, 150);
 </script>
 </body>
