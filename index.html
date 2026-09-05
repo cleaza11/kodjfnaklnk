@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Tactical Air Track Map</title>
+  <title>Tactical Air Track Map - Smooth Curves</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
@@ -69,7 +69,6 @@
       box-shadow: -1px 3px 8px rgba(0,0,0,0.28); border-radius: 6px;
     }
 
-    /* блок 1: скидання слідів + пошук, пліч-о-пліч */
     .tools-row-split { display: flex; }
     .split-btn {
       width: 36px; height: 36px; display: flex; justify-content: center; align-items: center;
@@ -77,7 +76,6 @@
     }
     .split-btn:last-child { border-right: none; }
 
-    /* блок 2: радар / охопити / повний екран / додати ціль, суцільна колонка */
     .tools-col { display: flex; flex-direction: column; width: 40px; }
     .full-btn {
       width: 100%; height: 38px; display: flex; justify-content: center; align-items: center;
@@ -86,7 +84,6 @@
     .full-btn:last-child { border-bottom: none; }
     .border-thick { border-bottom: 3px solid #666; }
 
-    /* блок 3: кошик, окремо, з лічильником поверх лівого кута */
     .tools-trash-wrapper { position: relative; }
     .badge-counter {
       position: absolute; left: -18px; bottom: -6px;
@@ -149,18 +146,15 @@
 
     /* ================= МОБІЛЬНА АДАПТАЦІЯ ================= */
     @media (max-width: 700px), (pointer: coarse) {
-      /* таблиця цілей: не стискаємо колонки — даємо горизонтальний скрол замість каші з тексту */
       .table-container { overflow-x: auto; }
       table { table-layout: auto; min-width: 620px; }
       th, td { padding: 6px 8px; font-size: 12px; }
       th { font-size: 9px; }
       .top-panel { max-height: 34vh; font-size: 12px; }
 
-      /* збільшуємо кнопки дій у рядку — зручніше пальцем */
       .btn-action { width: 32px; height: 32px; margin-left: 4px; }
       .btn-action svg { width: 18px; height: 18px; }
 
-      /* права панель інструментів — трохи більші кнопки під тач */
       .right-tools-wrapper { right: calc(10px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); gap: 10px; }
       .split-btn { width: 44px; height: 44px; }
       .tools-col { width: 48px; }
@@ -168,7 +162,6 @@
       .trash-btn { width: 48px; height: 44px; }
       .badge-counter { width: 36px; height: 36px; font-size: 14px; left: -16px; bottom: -8px; }
 
-      /* модалка й підказка */
       .target-modal { padding: 18px 20px; gap: 12px; }
       .modal-row select, .modal-row input, .speed-preview { font-size: 16px; }
       .hud-hint { font-size: 12px; padding: 8px 16px; top: calc(60px + env(safe-area-inset-top)); }
@@ -288,9 +281,6 @@
   let addSpeed = 193;
   let addAlt = 0;
 
-  // Реалістичні діапазони швидкості (км/год) та типовий ешелон (м) для кожного типу борта.
-  // Швидкість більше не вводиться вручну — розраховується автоматично, щоб не було
-  // ситуацій на кшталт "Шахед летить 900 км/год".
   const profileByType = {
     'Ударний дрон': { speedMin: 150, speedMax: 185, alt: '1500' },
     'КАБ':          { speedMin: 700, speedMax: 900, alt: '0' },
@@ -320,6 +310,27 @@
     'Су-34': `<path d="M 47,5 Q 50,-1 53,5 L 54,20 L 62,23 L 62,27 L 55,31 L 60,45 L 95,70 L 95,75 L 62,70 L 62,83 L 72,93 L 72,97 L 55,90 L 53,103 L 47,103 L 45,90 L 28,97 L 28,93 L 38,83 L 38,70 L 5,75 L 5,70 L 40,45 L 45,31 L 38,27 L 38,23 L 46,20 Z" fill="#c20a35"/>`,
     'Су-35': `<path d="M 49,0 Q 50,-5 51,0 L 53,25 L 60,45 L 95,70 L 95,75 L 60,70 L 60,85 L 72,95 L 72,99 L 56,93 L 56,103 L 44,103 L 44,93 L 28,99 L 28,95 L 40,85 L 40,70 L 5,75 L 5,70 L 40,45 L 47,25 Z" fill="#c20a35"/>`
   };
+
+  // Алгоритм згладжування кутів треку (Chaikin's smoothing algorithm)
+  function smoothPath(points, iterations = 2) {
+    if (!points || points.length <= 2) return points;
+    let current = points;
+    for (let it = 0; it < iterations; it++) {
+      let smoothed = [];
+      smoothed.push(current[0]);
+      for (let i = 0; i < current.length - 1; i++) {
+        let p0 = current[i];
+        let p1 = current[i + 1];
+        let q = [0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]];
+        let r = [0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]];
+        smoothed.push(q);
+        smoothed.push(r);
+      }
+      smoothed.push(current[current.length - 1]);
+      current = smoothed;
+    }
+    return current;
+  }
 
   function calculateHeading(latlng1, latlng2) {
     const p1 = map.project(latlng1); const p2 = map.project(latlng2);
@@ -373,7 +384,7 @@
       if (obj.marker) map.removeLayer(obj.marker);
       if (obj.ray) map.removeLayer(obj.ray);
       if (obj.trace) map.removeLayer(obj.trace);
-      if (obj.tail) map.removeLayer(obj.tail);
+      if (obj.trail) map.removeLayer(obj.trail);
     });
     layerObjects = {};
 
@@ -388,9 +399,11 @@
         const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
         layerObjects[t.id].ray = L.polyline([[t.lat, t.lng], rayEnd], { color: '#555', weight: 1, opacity: 0.8 }).addTo(map);
 
-        if (t.startLat !== t.lat || t.startLng !== t.lng) {
-          layerObjects[t.id].tail = L.polyline([[t.startLat, t.startLng], [t.lat, t.lng]], {
-            color: '#c20a35', weight: 1.5, dashArray: '4, 4', opacity: 0.7
+        // Рендеринг згладженої історії сліду (треку)
+        if (t.path && t.path.length > 1) {
+          const smoothedPoints = smoothPath(t.path);
+          layerObjects[t.id].trail = L.polyline(smoothedPoints, {
+            color: '#c20a35', weight: 1.8, dashArray: '4, 4', opacity: 0.75, smoothFactor: 1
           }).addTo(map);
         }
 
@@ -428,9 +441,10 @@
         `;
         tbody.appendChild(tr);
       } else {
-        if (t.startLat !== t.lat || t.startLng !== t.lng) {
-          layerObjects[t.id].trace = L.polyline([[t.startLat, t.startLng], [t.lat, t.lng]], {
-            color: '#c20a35', weight: 1.5, dashArray: '4, 4', opacity: 0.6
+        if (t.path && t.path.length > 1) {
+          const smoothedPoints = smoothPath(t.path);
+          layerObjects[t.id].trace = L.polyline(smoothedPoints, {
+            color: '#c20a35', weight: 1.5, dashArray: '4, 4', opacity: 0.5, smoothFactor: 1
           }).addTo(map);
         }
       }
@@ -444,8 +458,6 @@
 
     document.getElementById('activeCounter').innerText = activeCount;
   }
-
-  // === ПАНЕЛЬ ІНСТРУМЕНТІВ ===
 
   window.openAddModal = () => {
     document.getElementById('targetModal').style.display = 'flex';
@@ -503,13 +515,14 @@
   window.lostTarget = (id) => { const t = targets.find(x => x.id === id); if (t) { t.active = false; render(); } };
   window.deleteTarget = (id) => { targets = targets.filter(x => x.id !== id); render(); };
 
-  // === ЛОГІКА КЛІКІВ ПО КАРТІ ===
   map.on('click', function(e) {
     if (reaimTargetId) {
       const t = targets.find(x => x.id === reaimTargetId);
       if (t) {
-        t.lat = e.latlng.lat; t.lng = e.latlng.lng;
-        t.heading = calculateHeading([t.startLat, t.startLng], e.latlng);
+        t.path.push([e.latlng.lat, e.latlng.lng]);
+        t.lat = e.latlng.lat; 
+        t.lng = e.latlng.lng;
+        t.heading = calculateHeading([t.path[t.path.length - 2][0], t.path[t.path.length - 2][1]], e.latlng);
       }
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = null; reaimTargetId = null;
@@ -523,13 +536,17 @@
         const newId = Math.floor(1000 + Math.random() * 9000).toString();
         pendingTarget = {
           id: newId, type: addType, sub: 'ПП', alt: addAlt, speed: addSpeed, heading: 0,
-          lat: e.latlng.lat, lng: e.latlng.lng, startLat: e.latlng.lat, startLng: e.latlng.lng, active: true
+          lat: e.latlng.lat, lng: e.latlng.lng, 
+          path: [[e.latlng.lat, e.latlng.lng]],
+          active: true
         };
         tempPreviewMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon: createTargetIcon(pendingTarget) }).addTo(map);
         showHint('КЛІК 2: Вкажіть вектор польоту');
       } else {
-        pendingTarget.lat = e.latlng.lat; pendingTarget.lng = e.latlng.lng;
-        pendingTarget.heading = calculateHeading([pendingTarget.startLat, pendingTarget.startLng], e.latlng);
+        pendingTarget.lat = e.latlng.lat; 
+        pendingTarget.lng = e.latlng.lng;
+        pendingTarget.path.push([e.latlng.lat, e.latlng.lng]);
+        pendingTarget.heading = calculateHeading([pendingTarget.path[0][0], pendingTarget.path[0][1]], e.latlng);
         targets.push(pendingTarget);
 
         if (tempPreviewMarker) map.removeLayer(tempPreviewMarker);
@@ -544,13 +561,13 @@
 
   map.on('mousemove', function(e) {
     if (pendingTarget && tempPreviewMarker) {
-      const heading = calculateHeading([pendingTarget.startLat, pendingTarget.startLng], e.latlng);
+      const heading = calculateHeading([pendingTarget.path[0][0], pendingTarget.path[0][1]], e.latlng);
       pendingTarget.heading = heading;
       tempPreviewMarker.setLatLng(e.latlng);
       tempPreviewMarker.setIcon(createTargetIcon(pendingTarget));
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
-      tempGuideLine = L.polyline([[pendingTarget.startLat, pendingTarget.startLng], [e.latlng.lat, e.latlng.lng]], {
+      tempGuideLine = L.polyline([pendingTarget.path[0], [e.latlng.lat, e.latlng.lng]], {
         color: '#c20a35', weight: 1.5, dashArray: '4, 4', opacity: 0.7
       }).addTo(map);
       showHint(`ВЕКТОР: ${heading}° (Клікніть для фіксації)`);
@@ -559,14 +576,15 @@
     if (reaimTargetId) {
       const t = targets.find(x => x.id === reaimTargetId);
       if (t) {
-        const heading = calculateHeading([t.startLat, t.startLng], e.latlng);
+        const lastPoint = t.path[t.path.length - 1];
+        const heading = calculateHeading(lastPoint, e.latlng);
         t.heading = heading;
         if (layerObjects[t.id] && layerObjects[t.id].marker) {
           layerObjects[t.id].marker.setLatLng(e.latlng);
           layerObjects[t.id].marker.setIcon(createTargetIcon(t));
         }
         if (tempGuideLine) map.removeLayer(tempGuideLine);
-        tempGuideLine = L.polyline([[t.startLat, t.startLng], [e.latlng.lat, e.latlng.lng]], {
+        tempGuideLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {
           color: '#c20a35', weight: 1.5, dashArray: '4, 4', opacity: 0.7
         }).addTo(map);
       }
