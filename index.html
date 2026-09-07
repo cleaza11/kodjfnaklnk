@@ -30,21 +30,18 @@
 
     /* Шапка панелі (клікабельна для згортання) */
     .panel-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: center; align-items: center;
       padding: 8px 15px; background: transparent; cursor: pointer;
-      font-size: 12px; font-weight: 700; color: #222; letter-spacing: 0.5px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
       border-bottom: 1px solid rgba(255,255,255,0.3); user-select: none;
     }
     .panel-header:hover { background: rgba(255, 255, 255, 0.2); }
-    .panel-title { display: flex; align-items: center; gap: 8px; }
-    .pulse-dot { width: 8px; height: 8px; background: #34c759; border-radius: 50%; box-shadow: 0 0 6px rgba(52, 199, 89, 0.6); animation: pulse 2s infinite; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     
     .panel-toggle { transition: transform 0.3s ease; font-size: 10px; color: #555; font-weight: bold; }
     .top-panel.collapsed .panel-toggle { transform: rotate(-180deg); }
     .top-panel.collapsed .table-container { max-height: 0 !important; border-top: none; }
 
-    /* Таблиця (Прибрано колонку висоти та швидкості) */
+    /* Таблиця */
     .table-container { 
       overflow-y: auto; overflow-x: auto; padding: 0; -webkit-overflow-scrolling: touch;
       max-height: 35vh; transition: max-height 0.3s ease-in-out;
@@ -92,7 +89,7 @@
     .btn-lost svg { stroke: #555; fill: none; }
     .btn-delete svg { stroke: #555; fill: none; }
 
-    /* ================= ПРАВИЙ БЛОК ІНСТРУМЕНТІВ (LIQUID GLASS) ================= */
+    /* ================= ПРАВИЙ БЛОК ІНСТРУМЕНТІВ ================= */
     .right-tools-wrapper {
       position: absolute; right: 20px; bottom: 30px; z-index: 1000;
       right: calc(20px + env(safe-area-inset-right));
@@ -181,7 +178,6 @@
     .target-container { position: relative; width: 140px; height: 50px; pointer-events: auto; }
     .target-icon { position: absolute; top: 0; left: 0; width: 28px; height: 32px; transform-origin: center center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: transform 1.2s cubic-bezier(0.1, 1, 0.1, 1); }
     
-    /* ТЕКСТ ЦІЛЕЙ (БЕЗ ОБВОДКИ І БЕЗ ШВИДКОСТІ/ВИСОТИ) */
     .target-info {
       position: absolute; top: 16px; left: 36px; transform: translateY(-50%);
       font-size: 13px; line-height: 1.2; font-weight: 700; color: #c20a35;
@@ -248,10 +244,6 @@
 <!-- ВЕРХНЯ ЗГОРТАНА ПАНЕЛЬ (LIQUID GLASS) -->
 <div class="top-panel" id="mainTopPanel">
   <div class="panel-header" onclick="toggleTopPanel()">
-    <div class="panel-title">
-      <div class="pulse-dot"></div>
-      ОПЕРАТИВНИЙ РАДАР <span style="color:#666; font-weight:normal; margin-left:5px;">(АКТИВНІ: <span id="headerActiveCount">0</span>)</span>
-    </div>
     <div class="panel-toggle">▼ ЗГОРНУТИ</div>
   </div>
   <div class="table-container">
@@ -640,7 +632,6 @@
     }
 
     document.getElementById('activeCounter').innerText = activeCount;
-    document.getElementById('headerActiveCount').innerText = activeCount;
   }
 
   window.openAddModal = () => {
