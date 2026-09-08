@@ -182,9 +182,17 @@
       position: absolute; top: 16px; left: 36px; transform: translateY(-50%);
       font-size: 13px; line-height: 1.2; font-weight: 700; color: #c20a35;
       text-shadow: none; 
-      white-space: nowrap; transition: color 0.3s;
+      white-space: nowrap; transition: color 0.3s, opacity 0.2s ease;
     }
     .course-wrapper { display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+
+    /* Приховування підписів цілей */
+    body.hide-labels .target-info { display: none !important; }
+
+    /* Стилі для помітного сліду втраченої цілі */
+    .trail-lost {
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+    }
 
     /* ================= ТЕМНИЙ РЕЖИМ (РАДАР) ================= */
     .leaflet-tile-pane { transition: filter 0.5s ease; }
@@ -214,7 +222,8 @@
     body.radar-active .btn-radar .tool-icon { stroke: #34c759; }
     
     body.radar-active .vector-ray { stroke: #ffffff !important; opacity: 0.9 !important; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)); }
-    body.radar-active .trail-line { stroke: #ff3355 !important; opacity: 0.9 !important; filter: drop-shadow(0 0 3px rgba(255, 51, 85, 0.6)); }
+    body.radar-active .trail-line { stroke: #ff3355 !important; opacity: 0.95 !important; filter: drop-shadow(0 0 3px rgba(255, 51, 85, 0.6)); }
+    body.radar-active .trail-lost { stroke: #ff3355 !important; opacity: 0.9 !important; filter: drop-shadow(0 0 3px rgba(255, 51, 85, 0.7)); }
     body.radar-active .target-icon { filter: drop-shadow(0 0 4px rgba(255, 51, 85, 0.8)); }
     body.radar-active .target-info { color: #ff4d6d; text-shadow: none; }
 
@@ -320,6 +329,15 @@
       </svg>
     </div>
 
+    <!-- КНОПКА ПРИХОВУВАННЯ НАЗВ ЦІЛЕЙ -->
+    <div class="full-btn" id="btnToggleLabels" title="Показати/приховати назви цілей на карті" onclick="toggleTargetLabels()">
+      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+        <path d="M4 7V4h16v3"/>
+        <line x1="12" y1="4" x2="12" y2="20"/>
+        <line x1="9" y1="20" x2="15" y2="20"/>
+      </svg>
+    </div>
+
     <div class="full-btn btn-radar" title="Темний радар-режим" onclick="toggleRadar()">
       <svg class="tool-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
         <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
@@ -359,7 +377,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // attributionControl: false приховує копірайт Leaflet
   const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.5, 36.0], 6);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
@@ -383,6 +400,17 @@
     'Су-34':        { speedMin: 850, speedMax: 1000 },
     'Су-35':        { speedMin: 900, speedMax: 1050 },
     'Баллістична ракета': { speedMin: 2000, speedMax: 2500 }
+  };
+
+  window.toggleTargetLabels = () => {
+    document.body.classList.toggle('hide-labels');
+    const isHidden = document.body.classList.contains('hide-labels');
+    const btn = document.getElementById('btnToggleLabels');
+    if (isHidden) {
+      btn.style.opacity = "0.4";
+    } else {
+      btn.style.opacity = "1";
+    }
   };
 
   window.toggleTopPanel = () => {
@@ -559,7 +587,7 @@
           if (pathArr.length > 1) {
             const smoothedPoints = smoothPath(pathArr);
             layerObjects[t.id].trail = L.polyline(smoothedPoints, {
-              color: '#e0405a', weight: 2, dashArray: '5, 5', opacity: 0.85, smoothFactor: 1, className: 'trail-line'
+              color: '#e0405a', weight: 2.2, dashArray: '5, 5', opacity: 0.9, smoothFactor: 1, className: 'trail-line'
             }).addTo(map);
           }
         }
@@ -595,10 +623,11 @@
         `;
         tbody.appendChild(tr);
       } else {
+        // Яскравий, чітко помітний пунктир для втрачених цілей
         if (t.path && t.path.length > 1) {
           const smoothedPoints = smoothPath(t.path);
           layerObjects[t.id].trail = L.polyline(smoothedPoints, {
-            color: '#e0405a', weight: 1.5, dashArray: '4, 4', opacity: 0.5, smoothFactor: 1, className: 'trail-line'
+            color: '#e02447', weight: 2.2, dashArray: '5, 5', opacity: 0.85, smoothFactor: 1, className: 'trail-lost'
           }).addTo(map);
         }
 
