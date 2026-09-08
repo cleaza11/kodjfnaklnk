@@ -14,10 +14,9 @@
     * { box-sizing: border-box; }
     #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
-    /* Приховуємо копірайт Leaflet */
     .leaflet-control-attribution { display: none !important; }
 
-    /* ================= ВЕРХНЯ ПАНЕЛЬ (СУПЕР ПРОЗОРИЙ LIQUID GLASS) ================= */
+    /* ================= ВЕРХНЯ ПАНЕЛЬ ================= */
     .top-panel {
       position: absolute; top: 0; left: 0; width: 100%;
       padding-top: env(safe-area-inset-top);
@@ -186,10 +185,8 @@
     }
     .course-wrapper { display: flex; align-items: center; gap: 4px; margin-top: 1px; }
 
-    /* Приховування підписів цілей */
     body.hide-labels .target-info { display: none !important; }
 
-    /* Стилі для помітного сліду втраченої цілі */
     .trail-lost {
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
     }
@@ -314,7 +311,8 @@
         <polyline points="12,1 12,4 15,4"/>
       </svg>
     </div>
-    <div class="split-btn" title="Пошук цілі" onclick="searchTarget()">
+    <!-- КНОПКА ПОШУКУ НАСЕЛЕНОГО ПУНКТУ -->
+    <div class="split-btn" title="Пошук населеного пункту" onclick="searchLocation()">
       <svg class="tool-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;">
         <circle cx="10" cy="10" r="7"/><line x1="15" y1="15" x2="21" y2="21"/>
       </svg>
@@ -377,7 +375,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.5, 36.0], 6);
+  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([47.8388, 35.1396], 9);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
   let targets = [];
@@ -393,6 +391,105 @@
   let isSimulating = false;
   let simInterval = null;
   let tickCount = 0;
+
+  let searchHighlightMarker = null;
+
+  const LOCAL_GEO_DB = {
+    "запоріжжя": [47.8388, 35.1396],
+    "шевченківський": [47.8485, 35.2152],
+    "космос": [47.7942, 35.2014],
+    "піски": [47.7780, 35.1680],
+    "правий берег": [47.8680, 35.0920],
+    "бородинський": [47.8830, 35.0650],
+    "осипенківський": [47.8760, 35.0430],
+    "центр": [47.8380, 35.1320],
+    "кічкас": [47.8720, 35.1650],
+    "бабурка": [47.8220, 35.0350],
+    "хортиця": [47.8280, 35.0990],
+    "дніпрогес": [47.8672, 35.1345],
+    "балабине": [47.7420, 35.2210],
+    "кушугум": [47.7117, 35.2178],
+    "малокатеринівка": [47.6650, 35.2600],
+    "вільнянськ": [47.9425, 35.4328],
+    "розумівка": [47.7530, 35.1320],
+    "біленьке": [47.6710, 35.0340],
+    "комишуваха": [47.7180, 35.5250],
+    "терсянка": [47.8920, 35.8850],
+    "оріхів": [47.5675, 35.7844],
+    "мала токмачка": [47.5350, 35.8920],
+    "роботине": [47.4480, 35.8340],
+    "гуляйполе": [47.6620, 36.2650],
+    "василівка": [47.4350, 35.2750],
+    "дніпрорудне": [47.3850, 34.9922],
+    "кам'янське": [47.5410, 35.3720],
+    "пологи": [47.4820, 36.2550],
+    "токмак": [47.2550, 35.7050],
+    "енергодар": [47.4980, 34.6560],
+    "мелітополь": [46.8480, 35.3780],
+    "бердянськ": [46.7580, 36.7880]
+  };
+
+  window.searchLocation = async () => {
+    let query = prompt("Введіть назву населеного пункту чи району Запорізької області:");
+    if (!query || !query.trim()) return;
+    query = query.trim().toLowerCase();
+
+    let foundLocalKey = Object.keys(LOCAL_GEO_DB).find(k => k.includes(query) || query.includes(k));
+    if (foundLocalKey) {
+      focusFoundPoint(LOCAL_GEO_DB[foundLocalKey][0], LOCAL_GEO_DB[foundLocalKey][1], query.toUpperCase());
+      return;
+    }
+
+    showHint("Пошук населеного пункту...");
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ' Запорізька область')}&limit=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'uk' } });
+      const data = await res.json();
+      hideHint();
+
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        focusFoundPoint(lat, lon, data[0].display_name.split(',')[0]);
+      } else {
+        alert("Населений пункт не знайдено. Перевірте правильність написання.");
+      }
+    } catch (e) {
+      hideHint();
+      alert("Не вдалося виконати онлайн-пошук. Перевірте з'єднання з мережею.");
+    }
+  };
+
+  function focusFoundPoint(lat, lng, name) {
+    if (searchHighlightMarker) {
+      map.removeLayer(searchHighlightMarker);
+      searchHighlightMarker = null;
+    }
+
+    searchHighlightMarker = L.circleMarker([lat, lng], {
+      radius: 12,
+      color: '#007aff',
+      weight: 3,
+      fillColor: '#007aff',
+      fillOpacity: 0.25
+    }).addTo(map);
+
+    const popup = L.popup()
+      .setLatLng([lat, lng])
+      .setContent(`<b>${name}</b><br>Координати: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+
+    popup.on('remove', () => {
+      if (searchHighlightMarker) {
+        map.removeLayer(searchHighlightMarker);
+        searchHighlightMarker = null;
+      }
+    });
+
+    searchHighlightMarker.bindPopup(popup).openPopup();
+    map.setView([lat, lng], 13);
+    showHint(`Фокус: ${name}`);
+    setTimeout(hideHint, 3000);
+  }
 
   const profileByType = {
     'Ударний дрон': { speedMin: 150, speedMax: 185 },
@@ -487,14 +584,6 @@
     'Баллістична ракета': `<g fill="none" stroke="#e0405a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 50 8 L 55 15 L 55 32 L 50 38 L 45 32 L 45 15 Z" fill="#e0405a"/><rect x="46" y="32" width="8" height="28" rx="2"/><line x1="48" y1="36" x2="52" y2="36"/><line x1="48" y1="42" x2="52" y2="42"/><line x1="48" y1="48" x2="52" y2="48"/><line x1="48" y1="54" x2="52" y2="54"/><path d="M 44 58 L 38 65 L 38 72 M 56 58 L 62 65 L 62 72"/><path d="M 46 60 L 42 70 Q 42 75 45 77 M 54 60 L 58 70 Q 58 75 55 77"/></g>`,
     '__default__': `<circle cx="50" cy="50" r="26" fill="#e0405a"/><path d="M50 18 L50 4 M50 82 L50 96" stroke="#e0405a" stroke-width="6"/>`
   };
-
-  function lerpHeading(current, target, step = 8) {
-    let diff = target - current;
-    if (diff > 180) diff -= 360;
-    if (diff < -180) diff += 360;
-    if (Math.abs(diff) < step) return target;
-    return (current + Math.sign(diff) * step + 360) % 360;
-  }
 
   function smoothPath(points, iterations = 3) {
     if (!points || points.length <= 2) return points;
@@ -623,7 +712,6 @@
         `;
         tbody.appendChild(tr);
       } else {
-        // Яскравий, чітко помітний пунктир для втрачених цілей
         if (t.path && t.path.length > 1) {
           const smoothedPoints = smoothPath(t.path);
           layerObjects[t.id].trail = L.polyline(smoothedPoints, {
@@ -682,17 +770,6 @@
   };
 
   window.clearGhosts = () => { targets = targets.filter(t => t.active); render(); };
-
-  window.searchTarget = () => {
-    let id = prompt("Введіть ID цілі для пошуку:");
-    if(!id) return;
-    let t = targets.find(x => x.id === id);
-    if(t && t.path && t.path.length > 0) {
-      map.setView(t.path[t.path.length - 1], 11);
-    } else {
-      alert("Ціль з таким ID не знайдено.");
-    }
-  };
 
   window.toggleRadar = () => {
     document.body.classList.toggle('radar-active');
@@ -829,6 +906,52 @@
     }
   });
 
+  // ================= АВТОМАТИЧНЕ ПІДКЛЮЧЕННЯ ДО СЕРВЕРА =================
+  function upsertFeedEvent(e) {
+    if (!e || !e.id || !Number.isFinite(e.lat) || !Number.isFinite(e.lng)) return;
+
+    let t = targets.find(x => x.id === e.id);
+    if (!t) {
+      t = {
+        id: String(e.id),
+        type: e.type || 'Ударний дрон',
+        sub: 'ПП',
+        speed: e.speed || randomSpeedFor(e.type),
+        heading: Number(e.heading ?? 0),
+        targetHeading: Number(e.heading ?? 0),
+        lat: Number(e.lat),
+        lng: Number(e.lng),
+        path: [[Number(e.lat), Number(e.lng)]],
+        active: e.active !== false
+      };
+      targets.push(t);
+    } else {
+      const moved = Math.abs(t.lat - e.lat) + Math.abs(t.lng - e.lng) > 1e-9;
+      if (moved) t.path.push([e.lat, e.lng]);
+      t.type = e.type || t.type;
+      t.speed = e.speed || t.speed;
+      t.heading = Number(e.heading ?? t.heading);
+      t.targetHeading = t.heading;
+      t.lat = Number(e.lat);
+      t.lng = Number(e.lng);
+      t.active = e.active !== false;
+    }
+    render();
+  }
+
+  function autoConnectSSE() {
+    try {
+      const feed = new EventSource('http://127.0.0.1:8765/events');
+      feed.onmessage = (ev) => {
+        try {
+          upsertFeedEvent(JSON.parse(ev.data));
+        } catch (_) {}
+      };
+      feed.onerror = () => {};
+    } catch (_) {}
+  }
+
+  autoConnectSSE();
   render();
 </script>
 </body>
