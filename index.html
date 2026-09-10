@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Tactical Air Track Map - Final Build</title>
+  <title>Tactical Air Track Map - Solid Trail</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
@@ -44,7 +44,6 @@
     .top-panel.collapsed .panel-toggle { transform: rotate(-180deg); }
     .top-panel.collapsed .table-container { max-height: 0 !important; border-top: none; }
 
-    /* Годинник */
     .clock {
       position: absolute;
       right: calc(16px + env(safe-area-inset-right));
@@ -203,6 +202,9 @@
 
     body.hide-labels .target-info { display: none !important; }
 
+    .trail-line {
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+    }
     .trail-lost {
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
     }
@@ -419,7 +421,6 @@
     'Баллістична ракета': { speedMin: 2000, speedMax: 2500 }
   };
 
-  // Оновлення годинника
   function updateClock() {
     const now = new Date();
     const clockEl = document.getElementById('clock');
@@ -608,6 +609,7 @@
           color: '#555', weight: 1.5, opacity: 0.8, className: 'vector-ray' 
         }).addTo(map);
 
+        // Суцільна лінія активної цілі
         if (t.segments && t.segments.length > 0) {
           const displaySegments = t.segments.map(s => [...s]);
           const lastSeg = displaySegments[displaySegments.length - 1];
@@ -615,7 +617,7 @@
             lastSeg.push([t.lat, t.lng]);
           }
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
-            color: '#e0405a', weight: 2.2, dashArray: '5, 5', opacity: 0.9, smoothFactor: 1, className: 'trail-line'
+            color: '#e0405a', weight: 2.2, opacity: 0.9, smoothFactor: 1, className: 'trail-line'
           }).addTo(map);
         }
 
@@ -650,9 +652,10 @@
         `;
         tbody.appendChild(tr);
       } else {
+        // Суцільна лінія архівних (втрачених) цілей
         if (t.segments && t.segments.length > 0) {
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(t.segments), {
-            color: '#e02447', weight: 2.2, dashArray: '5, 5', opacity: 0.85, smoothFactor: 1, className: 'trail-lost'
+            color: '#e02447', weight: 2.2, opacity: 0.85, smoothFactor: 1, className: 'trail-lost'
           }).addTo(map);
         }
 
@@ -889,7 +892,7 @@
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([restoreStartPos, [e.latlng.lat, e.latlng.lng]], {
-        color: '#e0405a', weight: 1.5, dashArray: '4, 4', opacity: 0.7
+        color: '#e0405a', weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(targetH)}° (Клікніть для підтвердження)`);
       return;
@@ -903,7 +906,7 @@
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([pendingTarget.segments[0][0], [e.latlng.lat, e.latlng.lng]], {
-        color: '#e0405a', weight: 1.5, dashArray: '4, 4', opacity: 0.7
+        color: '#e0405a', weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(pendingTarget.heading)}° (Клікніть для фіксації)`);
     }
@@ -921,7 +924,7 @@
         }
         if (tempGuideLine) map.removeLayer(tempGuideLine);
         tempGuideLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {
-          color: '#e0405a', weight: 1.5, dashArray: '4, 4', opacity: 0.7
+          color: '#e0405a', weight: 1.8, opacity: 0.8
         }).addTo(map);
       }
     }
