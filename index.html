@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Tactical Air Track Map - Solid Trail</title>
+  <title>Tactical Air Track Map - Smooth Trail</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
@@ -202,11 +202,16 @@
 
     body.hide-labels .target-info { display: none !important; }
 
+    /* Плавні стилі ліній без гострих заломів */
     .trail-line {
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
     }
     .trail-lost {
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
     }
 
     /* ================= ТЕМНИЙ РЕЖИМ (РАДАР) ================= */
@@ -465,19 +470,28 @@
     tickCount++;
     targets.forEach(t => {
       if (!t.active) return;
+
+      // Плавний доворот курсу в польоті
+      const isTurning = (t.targetHeading !== undefined && t.heading !== t.targetHeading);
+      if (isTurning) {
+        t.heading = lerpHeading(t.heading, t.targetHeading, 4);
+      }
+
       const distanceKm = (t.speed / 3600); 
       const newCoords = getDestination(t.lat, t.lng, t.heading, distanceKm);
       t.lat = newCoords[0];
       t.lng = newCoords[1];
 
       const currentSegment = t.segments[t.segments.length - 1];
-      if (tickCount % 5 === 0) {
+      // Під час віражу записуємо точки частіше для ідеальної дуги
+      if (isTurning || tickCount % 3 === 0) {
         currentSegment.push([t.lat, t.lng]);
       }
 
       if (layerObjects[t.id]) {
         if (layerObjects[t.id].marker) {
           layerObjects[t.id].marker.setLatLng([t.lat, t.lng]);
+          layerObjects[t.id].marker.setIcon(createTargetIcon(t));
         }
         if (layerObjects[t.id].ray) {
           const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
@@ -521,24 +535,52 @@
     return (current + Math.sign(diff) * step + 360) % 360;
   }
 
-  function smoothSegment(points, iterations = 3) {
-    if (!points || points.length <= 2) return points;
-    let current = points;
-    for (let it = 0; it < iterations; it++) {
-      let smoothed = [];
-      smoothed.push(current[0]);
-      for (let i = 0; i < current.length - 1; i++) {
-        let p0 = current[i];
-        let p1 = current[i + 1];
-        let q = [0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]];
-        let r = [0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]];
-        smoothed.push(q);
-        smoothed.push(r);
+  // Високоточне заокруглення кутів кривими Безьє
+  function smoothSegment(points, steps = 10) {
+    if (!points || points.length <= 2) return points || [];
+    
+    // Фільтрація надлишкових точок, що збігаються
+    const clean = [points[0]];
+    for (let i = 1; i < points.length; i++) {
+      const dLat = Math.abs(points[i][0] - clean[clean.length - 1][0]);
+      const dLng = Math.abs(points[i][1] - clean[clean.length - 1][1]);
+      if (dLat > 0.00005 || dLng > 0.00005) {
+        clean.push(points[i]);
       }
-      smoothed.push(current[current.length - 1]);
-      current = smoothed;
     }
-    return current;
+    if (clean.length <= 2) return clean;
+
+    const result = [clean[0]];
+    for (let i = 1; i < clean.length - 1; i++) {
+      const p0 = clean[i - 1];
+      const p1 = clean[i];
+      const p2 = clean[i + 1];
+
+      const v1 = [p0[0] - p1[0], p0[1] - p1[1]];
+      const v2 = [p2[0] - p1[0], p2[1] - p1[1]];
+      const d1 = Math.hypot(v1[0], v1[1]);
+      const d2 = Math.hypot(v2[0], v2[1]);
+
+      if (d1 < 1e-6 || d2 < 1e-6) continue;
+
+      // Радіус заокруглення адаптивно до довжини сусідніх відрізків
+      const r = Math.min(d1 * 0.45, d2 * 0.45);
+      const start = [p1[0] + (v1[0] / d1) * r, p1[1] + (v1[1] / d1) * r];
+      const end = [p1[0] + (v2[0] / d2) * r, p1[1] + (v2[1] / d2) * r];
+
+      result.push(start);
+      // Генерація гладкої тангенціальної дуги
+      for (let s = 1; s < steps; s++) {
+        const t = s / steps;
+        const inv = 1 - t;
+        const lat = inv * inv * start[0] + 2 * inv * t * p1[0] + t * t * end[0];
+        const lng = inv * inv * start[1] + 2 * inv * t * p1[1] + t * t * end[1];
+        result.push([lat, lng]);
+      }
+      result.push(end);
+    }
+    result.push(clean[clean.length - 1]);
+    return result;
   }
 
   function smoothMultiPath(segments) {
@@ -609,15 +651,15 @@
           color: '#555', weight: 1.5, opacity: 0.8, className: 'vector-ray' 
         }).addTo(map);
 
-        // Суцільна лінія активної цілі
         if (t.segments && t.segments.length > 0) {
           const displaySegments = t.segments.map(s => [...s]);
           const lastSeg = displaySegments[displaySegments.length - 1];
           if (lastSeg.length === 0 || lastSeg[lastSeg.length - 1][0] !== t.lat) {
             lastSeg.push([t.lat, t.lng]);
           }
+          // smoothFactor: 0 зберігає всі розраховані точки без огрублення
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
-            color: '#e0405a', weight: 2.2, opacity: 0.9, smoothFactor: 1, className: 'trail-line'
+            color: '#e0405a', weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line'
           }).addTo(map);
         }
 
@@ -652,10 +694,9 @@
         `;
         tbody.appendChild(tr);
       } else {
-        // Суцільна лінія архівних (втрачених) цілей
         if (t.segments && t.segments.length > 0) {
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(t.segments), {
-            color: '#e02447', weight: 2.2, opacity: 0.85, smoothFactor: 1, className: 'trail-lost'
+            color: '#e02447', weight: 2.2, opacity: 0.85, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-lost'
           }).addTo(map);
         }
 
