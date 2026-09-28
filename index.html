@@ -7,12 +7,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Tactical Air Track Map - Dark Matter Radar</title>
+  <title>Tactical Air Track Map - Smooth Trail</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; transition: background 0.3s ease; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
     * { box-sizing: border-box; }
-    #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; background: #121417; }
+    #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
     /* Приховуємо копірайт Leaflet */
     .leaflet-control-attribution { display: none !important; }
@@ -117,7 +117,6 @@
       border: 1px solid rgba(255, 255, 255, 0.5);
       box-shadow: 0 8px 25px rgba(0,0,0,0.08); 
       border-radius: 10px; overflow: hidden;
-      transition: all 0.3s ease;
     }
     .tools-row-split { display: flex; }
     .split-btn {
@@ -191,12 +190,7 @@
 
     /* ================= МАРКЕРИ ================= */
     .target-container { position: relative; width: 140px; height: 50px; pointer-events: auto; }
-    .target-icon { 
-      position: absolute; top: 0; left: 0; width: 28px; height: 32px; 
-      transform-origin: center center; 
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); 
-      transition: transform 1.2s cubic-bezier(0.1, 1, 0.1, 1); 
-    }
+    .target-icon { position: absolute; top: 0; left: 0; width: 28px; height: 32px; transform-origin: center center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); transition: transform 1.2s cubic-bezier(0.1, 1, 0.1, 1); }
     
     .target-info {
       position: absolute; top: 16px; left: 36px; transform: translateY(-50%);
@@ -208,66 +202,51 @@
 
     body.hide-labels .target-info { display: none !important; }
 
-    .trail-line, .trail-lost {
+    /* Плавні стилі ліній без гострих заломів */
+    .trail-line {
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+      stroke-linecap: round !important;
+      stroke-linejoin: round !important;
+    }
+    .trail-lost {
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
     }
 
-    /* ================= ТЕМНИЙ РЕЖИМ (СТИЛЬ МОНІТОРИНГОВИХ КАНАЛІВ) ================= */
-    body.radar-active { background: #121417; }
+    /* ================= ТЕМНИЙ РЕЖИМ (РАДАР) ================= */
+    .leaflet-tile-pane { transition: filter 0.5s ease; }
+    
+    body.radar-active .leaflet-tile-pane { filter: invert(90%) hue-rotate(180deg) brightness(100%) contrast(90%) grayscale(20%); }
     
     body.radar-active .top-panel, body.radar-active .tools-block {
-      background: rgba(22, 25, 30, 0.55);
-      backdrop-filter: blur(24px) saturate(140%);
-      -webkit-backdrop-filter: blur(24px) saturate(140%);
-      border-color: rgba(255, 255, 255, 0.1); 
-      color: #eee;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: rgba(10, 15, 10, 0.3); border-color: rgba(255, 255, 255, 0.15); color: #eee;
     }
-    body.radar-active .panel-header { background: transparent; color: #fff; border-color: rgba(255,255,255,0.08); }
+    body.radar-active .panel-header { background: transparent; color: #fff; border-color: rgba(255,255,255,0.1); }
     body.radar-active .panel-header:hover { background: rgba(255,255,255,0.05); }
-    body.radar-active .panel-toggle { color: #8e96a4; }
-    body.radar-active .clock { color: #8e96a4; }
-    body.radar-active th { background: rgba(0,0,0,0.3); color: #8e96a4; border-color: rgba(255,255,255,0.06); }
-    body.radar-active td { color: #f0f2f5; border-color: rgba(255,255,255,0.05); }
-    body.radar-active tr:hover td { background: rgba(255,255,255,0.06); }
-    body.radar-active tr.row-lost td { background: rgba(0,0,0,0.25); color: #6b7280 !important; }
-    body.radar-active .status-lost-badge { background: #2d1d22; border-color: #4a2830; color: #ff5c77; }
+    body.radar-active .clock { color: #aaa; }
+    body.radar-active th { background: rgba(0,0,0,0.2); color: #aaa; border-color: rgba(255,255,255,0.05); }
+    body.radar-active td { color: #fff; border-color: rgba(255,255,255,0.05); }
+    body.radar-active tr:hover td { background: rgba(255,255,255,0.1); }
+    body.radar-active tr.row-lost td { background: rgba(0,0,0,0.3); color: #777 !important; }
+    body.radar-active .status-lost-badge { background: #3a1a1a; border-color: #5a2a2a; }
     
-    body.radar-active .split-btn, body.radar-active .full-btn, body.radar-active .trash-btn { border-color: rgba(255,255,255,0.06); }
-    body.radar-active .split-btn:hover, body.radar-active .full-btn:hover, body.radar-active .trash-btn:hover { background: rgba(255,255,255,0.08); }
+    body.radar-active .split-btn, body.radar-active .full-btn, body.radar-active .trash-btn { border-color: rgba(255,255,255,0.05); }
+    body.radar-active .split-btn:hover, body.radar-active .full-btn:hover, body.radar-active .trash-btn:hover { background: rgba(255,255,255,0.1); }
     
-    body.radar-active .btn-action { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); color: #fff; box-shadow: none; }
-    body.radar-active .btn-action:hover { background: rgba(255,255,255,0.18); }
-    body.radar-active .btn-action svg, body.radar-active .tool-icon { stroke: #c2c8d2; }
-    body.radar-active .btn-reaim svg .plane-path, body.radar-active .btn-reaim svg .blip-dot, body.radar-active .btn-focus svg { fill: #c2c8d2; }
+    body.radar-active .btn-action { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.1); color: #fff; box-shadow: none; }
+    body.radar-active .btn-action:hover { background: rgba(255,255,255,0.2); }
+    body.radar-active .btn-action svg, body.radar-active .tool-icon { stroke: #ddd; }
+    body.radar-active .btn-reaim svg .plane-path, body.radar-active .btn-reaim svg .blip-dot, body.radar-active .btn-focus svg { fill: #ddd; }
 
-    body.radar-active .btn-radar { background: rgba(255,255,255,0.12); }
+    body.radar-active .btn-radar { background: rgba(0,0,0,0.4); }
     body.radar-active .btn-radar .tool-icon { stroke: #34c759; }
-
-    /* Повне відключення світіння цілей та ліній у темному режимі */
-    body.radar-active .vector-ray { stroke: #cdd3dc !important; opacity: 0.65 !important; filter: none !important; }
-    body.radar-active .trail-line { stroke: #ff4766 !important; opacity: 0.9 !important; filter: none !important; }
-    body.radar-active .trail-lost { stroke: #d93853 !important; opacity: 0.75 !important; filter: none !important; }
-    body.radar-active .target-icon { 
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)) !important;
-    }
-    body.radar-active .target-info { 
-      color: #ff5c77; 
-      text-shadow: none !important;
-    }
-
-    body.radar-active .target-modal {
-      background: rgba(24, 27, 33, 0.92);
-      border-color: rgba(255, 255, 255, 0.15);
-      color: #f0f2f5;
-    }
-    body.radar-active .target-modal h3 { color: #f0f2f5; border-color: rgba(255,255,255,0.1); }
-    body.radar-active .modal-field label { color: #8e96a4; }
-    body.radar-active .modal-field input, body.radar-active .modal-field select {
-      background: rgba(0, 0, 0, 0.35); border-color: rgba(255, 255, 255, 0.12); color: #fff;
-    }
-    body.radar-active .modal-btn.secondary { background: rgba(255, 255, 255, 0.08); color: #ddd; }
+    
+    body.radar-active .vector-ray { stroke: #ffffff !important; opacity: 0.9 !important; filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)); }
+    body.radar-active .trail-line { stroke: #ff3355 !important; opacity: 0.95 !important; filter: drop-shadow(0 0 3px rgba(255, 51, 85, 0.6)); }
+    body.radar-active .trail-lost { stroke: #ff3355 !important; opacity: 0.9 !important; filter: drop-shadow(0 0 3px rgba(255, 51, 85, 0.7)); }
+    body.radar-active .target-icon { filter: drop-shadow(0 0 4px rgba(255, 51, 85, 0.8)); }
+    body.radar-active .target-info { color: #ff4d6d; text-shadow: none; }
 
     /* ================= МОБІЛЬНА АДАПТАЦІЯ ================= */
     @media (max-width: 700px), (pointer: coarse) {
@@ -418,12 +397,8 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // Дневной OSM и CartoDB Dark Matter
-  const lightMapUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const darkMapUrl  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-
   const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.5, 36.0], 6);
-  const tileLayer = L.tileLayer(lightMapUrl, { maxZoom: 18, subdomains: 'abcd' }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
   let targets = [];
   let layerObjects = {};
@@ -461,12 +436,6 @@
   setInterval(updateClock, 1000);
   updateClock();
 
-  window.toggleRadar = () => {
-    document.body.classList.toggle('radar-active');
-    const isDark = document.body.classList.contains('radar-active');
-    tileLayer.setUrl(isDark ? darkMapUrl : lightMapUrl);
-  };
-
   window.toggleTargetLabels = () => {
     document.body.classList.toggle('hide-labels');
     const isHidden = document.body.classList.contains('hide-labels');
@@ -502,6 +471,7 @@
     targets.forEach(t => {
       if (!t.active) return;
 
+      // Плавний доворот курсу в польоті
       const isTurning = (t.targetHeading !== undefined && t.heading !== t.targetHeading);
       if (isTurning) {
         t.heading = lerpHeading(t.heading, t.targetHeading, 4);
@@ -513,6 +483,7 @@
       t.lng = newCoords[1];
 
       const currentSegment = t.segments[t.segments.length - 1];
+      // Під час віражу записуємо точки частіше для ідеальної дуги
       if (isTurning || tickCount % 3 === 0) {
         currentSegment.push([t.lat, t.lng]);
       }
@@ -564,9 +535,11 @@
     return (current + Math.sign(diff) * step + 360) % 360;
   }
 
+  // Високоточне заокруглення кутів кривими Безьє
   function smoothSegment(points, steps = 10) {
     if (!points || points.length <= 2) return points || [];
     
+    // Фільтрація надлишкових точок, що збігаються
     const clean = [points[0]];
     for (let i = 1; i < points.length; i++) {
       const dLat = Math.abs(points[i][0] - clean[clean.length - 1][0]);
@@ -590,11 +563,13 @@
 
       if (d1 < 1e-6 || d2 < 1e-6) continue;
 
+      // Радіус заокруглення адаптивно до довжини сусідніх відрізків
       const r = Math.min(d1 * 0.45, d2 * 0.45);
       const start = [p1[0] + (v1[0] / d1) * r, p1[1] + (v1[1] / d1) * r];
       const end = [p1[0] + (v2[0] / d2) * r, p1[1] + (v2[1] / d2) * r];
 
       result.push(start);
+      // Генерація гладкої тангенціальної дуги
       for (let s = 1; s < steps; s++) {
         const t = s / steps;
         const inv = 1 - t;
@@ -636,7 +611,7 @@
           <div>${t.type}</div>
           <div>${t.id} ПП</div>
           <div class="course-wrapper">
-            <svg width="22" height="6" viewBox="0 0 22 6"><line x1="0" y1="3" x2="22" y2="3" stroke="#34c759" stroke-width="2" /></svg>
+            <svg width="22" height="6" viewBox="0 0 22 6"><line x1="0" y1="3" x2="22" y2="3" stroke="#34c759" stroke-width="2" stroke-dasharray="6,4" /></svg>
             <span>${Math.round(t.heading)}°</span>
           </div>
         </div>
@@ -682,6 +657,7 @@
           if (lastSeg.length === 0 || lastSeg[lastSeg.length - 1][0] !== t.lat) {
             lastSeg.push([t.lat, t.lng]);
           }
+          // smoothFactor: 0 зберігає всі розраховані точки без огрублення
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
             color: '#e0405a', weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line'
           }).addTo(map);
@@ -791,6 +767,10 @@
     } else {
       alert("Ціль з таким ID не знайдено.");
     }
+  };
+
+  window.toggleRadar = () => {
+    document.body.classList.toggle('radar-active');
   };
 
   window.fitAllTargets = () => {
