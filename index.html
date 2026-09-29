@@ -10,7 +10,7 @@
   <title>Tactical Air Track Map - Smooth Trail</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #111418; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
     * { box-sizing: border-box; }
     #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
@@ -212,10 +212,16 @@
       stroke-linejoin: round !important;
     }
 
-    /* ================= ТЕМНИЙ РЕЖИМ (РАДАР) ================= */
-    .leaflet-tile-pane { transition: filter 0.5s ease; }
-    
-    body.radar-active .leaflet-tile-pane { filter: invert(90%) hue-rotate(180deg) brightness(100%) contrast(90%) grayscale(20%); }
+    /* ================= ТЕМНА ТАКТИЧНА КАРТА ================= */
+    .leaflet-tile-pane {
+      filter: brightness(0.88) contrast(1.08) saturate(0.72);
+      transition: filter 0.5s ease;
+    }
+
+    /* Радар-режим залишає темну основу, але додає холодніший контраст */
+    body.radar-active .leaflet-tile-pane {
+      filter: brightness(0.72) contrast(1.18) saturate(0.55) grayscale(12%);
+    }
     
     body.radar-active .top-panel, body.radar-active .tools-block {
       background: rgba(10, 15, 10, 0.3); border-color: rgba(255, 255, 255, 0.15); color: #eee;
@@ -396,7 +402,12 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.5, 36.0], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+  // Темна базова карта в стилі тактичного/оперативного радара.
+  // Використовується Carto Dark Matter замість стандартного світлого OSM.
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd'
+  }).addTo(map);
 
   let targets = [];
   let layerObjects = {};
