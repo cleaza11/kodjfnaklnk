@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#f0f0f5">
+  <meta name="theme-color" content="#12151a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Tactical Air Track Map - Smooth Trail</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #12151a; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
     * { box-sizing: border-box; }
-    #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+    #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; background: #12151a; }
 
     /* Приховуємо копірайт Leaflet */
     .leaflet-control-attribution { display: none !important; }
@@ -170,6 +170,7 @@
     }
     .modal-field input:focus, .modal-field select:focus { outline: none; border-color: #007aff; background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
     .modal-field input::placeholder { color: #555; font-style: italic; font-weight: normal; }
+    .modal-info { font-size: 11px; color: #777; margin-top: 4px; }
     
     .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
     .modal-btn { flex: 1; background: #007aff; border: none; color: #fff; padding: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 12px; }
@@ -182,27 +183,29 @@
     /* ================= ПІДКАЗКА (HUD) ================= */
     .hud-hint {
       position: absolute; top: calc(80px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(12px); color: #fff; padding: 10px 20px;
-      font-size: 13px; font-weight: 600; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(14px); color: #fff; padding: 10px 20px;
+      font-size: 13px; font-weight: 600; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
       z-index: 1000; display: none; pointer-events: none; letter-spacing: 0.5px;
       max-width: 90vw; text-align: center; white-space: normal;
     }
 
     /* ================= МАРКЕРИ ================= */
     .target-container { position: relative; width: 140px; height: 50px; pointer-events: auto; }
-    .target-icon { position: absolute; top: 0; left: 0; width: 28px; height: 32px; transform-origin: center center; transition: transform 1.2s cubic-bezier(0.1, 1, 0.1, 1); }
+    .target-icon { 
+      position: absolute; top: 0; left: 0; width: 28px; height: 32px; 
+      transform-origin: center center; transition: transform 1.2s cubic-bezier(0.1, 1, 0.1, 1); 
+    }
     
     .target-info {
       position: absolute; top: 16px; left: 36px; transform: translateY(-50%);
-      font-size: 13px; line-height: 1.2; font-weight: 700; color: #c20a35;
-      text-shadow: none; 
-      white-space: nowrap; transition: color 0.3s, opacity 0.2s ease;
+      font-size: 12px; line-height: 1.2; font-weight: 700; color: #c20a35;
+      text-shadow: none; white-space: nowrap; transition: color 0.3s, opacity 0.2s ease;
     }
     .course-wrapper { display: flex; align-items: center; gap: 4px; margin-top: 1px; }
 
     body.hide-labels .target-info { display: none !important; }
 
-    /* Плавні стилі ліній без гострих заломів */
+    /* Плавні стилі ліній */
     .trail-line {
       stroke-linecap: round !important;
       stroke-linejoin: round !important;
@@ -212,39 +215,102 @@
       stroke-linejoin: round !important;
     }
 
-    /* ================= ТЕМНИЙ РЕЖИМ (РАДАР) ================= */
-    .leaflet-tile-pane { transition: filter 0.5s ease; }
-    
-    body.radar-active .leaflet-tile-pane { filter: invert(90%) hue-rotate(180deg) brightness(100%) contrast(90%) grayscale(20%); }
-    
-    body.radar-active .top-panel, body.radar-active .tools-block {
-      background: rgba(10, 15, 10, 0.3); border-color: rgba(255, 255, 255, 0.15); color: #eee;
-    }
-    body.radar-active .panel-header { background: transparent; color: #fff; border-color: rgba(255,255,255,0.1); }
-    body.radar-active .panel-header:hover { background: rgba(255,255,255,0.05); }
-    body.radar-active .clock { color: #aaa; }
-    body.radar-active th { background: rgba(0,0,0,0.2); color: #aaa; border-color: rgba(255,255,255,0.05); }
-    body.radar-active td { color: #fff; border-color: rgba(255,255,255,0.05); }
-    body.radar-active tr:hover td { background: rgba(255,255,255,0.1); }
-    body.radar-active tr.row-lost td { background: rgba(0,0,0,0.3); color: #777 !important; }
-    body.radar-active .status-lost-badge { background: #3a1a1a; border-color: #5a2a2a; }
-    
-    body.radar-active .split-btn, body.radar-active .full-btn, body.radar-active .trash-btn { border-color: rgba(255,255,255,0.05); }
-    body.radar-active .split-btn:hover, body.radar-active .full-btn:hover, body.radar-active .trash-btn:hover { background: rgba(255,255,255,0.1); }
-    
-    body.radar-active .btn-action { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.1); color: #fff; box-shadow: none; }
-    body.radar-active .btn-action:hover { background: rgba(255,255,255,0.2); }
-    body.radar-active .btn-action svg, body.radar-active .tool-icon { stroke: #ddd; }
-    body.radar-active .btn-reaim svg .plane-path, body.radar-active .btn-reaim svg .blip-dot, body.radar-active .btn-focus svg { fill: #ddd; }
+    /* ================= АВТЕНТИЧНИЙ ТЕМНИЙ РАДАР (З СКРІНШОТА) ================= */
+    body.radar-active { background: #12151a; color: #dcdcdc; }
 
-    body.radar-active .btn-radar { background: rgba(0,0,0,0.4); }
-    body.radar-active .btn-radar .tool-icon { stroke: #34c759; }
-    
-    body.radar-active .vector-ray { stroke: #ffffff !important; opacity: 0.7 !important; }
-    body.radar-active .trail-line { stroke: #ff3355 !important; opacity: 0.85 !important; filter: none !important; }
-    body.radar-active .trail-lost { stroke: #ff3355 !important; opacity: 0.6 !important; filter: none !important; }
-    body.radar-active .target-icon { filter: none !important; }
-    body.radar-active .target-info { color: #ff4d6d; text-shadow: none; }
+    body.radar-active .top-panel, 
+    body.radar-active .tools-block {
+      background: rgba(22, 27, 34, 0.72) !important;
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5) !important;
+      color: #e5e5e5 !important;
+    }
+    body.radar-active .panel-header { 
+      background: transparent !important; 
+      color: #f0f0f0 !important; 
+      border-color: rgba(255, 255, 255, 0.06) !important; 
+    }
+    body.radar-active .panel-header:hover { background: rgba(255, 255, 255, 0.04) !important; }
+    body.radar-active .panel-toggle { color: #8b949e !important; }
+    body.radar-active .clock { color: #8b949e !important; }
+
+    body.radar-active th { 
+      background: rgba(13, 17, 23, 0.5) !important; 
+      color: #8b949e !important; 
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; 
+    }
+    body.radar-active td { 
+      color: #f0f6fc !important; 
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important; 
+    }
+    body.radar-active tr:hover td { background: rgba(255, 255, 255, 0.04) !important; }
+    body.radar-active tr.row-lost td { background: rgba(0, 0, 0, 0.25) !important; color: #6e7681 !important; }
+    body.radar-active .status-lost-badge { 
+      background: rgba(248, 81, 73, 0.15) !important; 
+      color: #ff7b72 !important; 
+      border-color: rgba(248, 81, 73, 0.3) !important; 
+    }
+    body.radar-active .row-empty { color: #6e7681 !important; }
+
+    body.radar-active .split-btn, 
+    body.radar-active .full-btn, 
+    body.radar-active .trash-btn { 
+      border-color: rgba(255, 255, 255, 0.06) !important; 
+    }
+    body.radar-active .split-btn:hover, 
+    body.radar-active .full-btn:hover, 
+    body.radar-active .trash-btn:hover { 
+      background: rgba(255, 255, 255, 0.08) !important; 
+    }
+    body.radar-active .border-thick { border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important; }
+
+    body.radar-active .btn-action { 
+      background: rgba(255, 255, 255, 0.06) !important; 
+      border-color: rgba(255, 255, 255, 0.08) !important; 
+      box-shadow: none !important; 
+    }
+    body.radar-active .btn-action:hover { background: rgba(255, 255, 255, 0.15) !important; }
+    body.radar-active .btn-action svg, 
+    body.radar-active .tool-icon { stroke: #c9d1d9 !important; }
+    body.radar-active .btn-reaim svg .plane-path, 
+    body.radar-active .btn-reaim svg .blip-dot, 
+    body.radar-active .btn-focus svg { fill: #c9d1d9 !important; }
+
+    /* Активна кнопка радара */
+    body.radar-active .btn-radar { background: rgba(52, 199, 89, 0.18) !important; }
+    body.radar-active .btn-radar .tool-icon { stroke: #34c759 !important; }
+
+    /* Лінії та вектори на карті */
+    body.radar-active .vector-ray { stroke: #ffffff !important; opacity: 0.75 !important; }
+    body.radar-active .badge-counter { border-color: #161b22 !important; }
+
+    /* Модальне вікно в темному режимі */
+    body.radar-active .target-modal {
+      background: rgba(22, 27, 34, 0.92) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #f0f6fc !important;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7) !important;
+    }
+    body.radar-active .target-modal h3 { color: #f0f6fc !important; border-color: rgba(255, 255, 255, 0.08) !important; }
+    body.radar-active .modal-field label { color: #8b949e !important; }
+    body.radar-active .modal-field input, 
+    body.radar-active .modal-field select { 
+      background: rgba(13, 17, 23, 0.8) !important; 
+      border-color: rgba(255, 255, 255, 0.12) !important; 
+      color: #f0f6fc !important; 
+    }
+    body.radar-active .modal-field input:focus, 
+    body.radar-active .modal-field select:focus { 
+      border-color: #2f81f7 !important; 
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.25) !important; 
+    }
+    body.radar-active .modal-field input::placeholder { color: #6e7681 !important; }
+    body.radar-active .modal-btn.secondary { background: rgba(255, 255, 255, 0.08) !important; color: #c9d1d9 !important; }
+    body.radar-active .modal-close { color: #8b949e !important; }
+    body.radar-active .modal-close:hover { color: #f0f6fc !important; }
+    body.radar-active .hud-hint { background: rgba(13, 17, 23, 0.85) !important; border: 1px solid rgba(255, 255, 255, 0.1); }
 
     /* ================= МОБІЛЬНА АДАПТАЦІЯ ================= */
     @media (max-width: 700px), (pointer: coarse) {
@@ -267,7 +333,7 @@
     }
   </style>
 </head>
-<body>
+<body class="radar-active"> <!-- За замовчуванням увімкнено темний режим зі скріншота -->
 
 <!-- ВЕРХНЯ ЗГОРТАНА ПАНЕЛЬ -->
 <div class="top-panel" id="mainTopPanel">
@@ -356,7 +422,7 @@
       </svg>
     </div>
 
-    <div class="full-btn btn-radar" title="Темний радар-режим" onclick="toggleRadar()">
+    <div class="full-btn btn-radar" title="Перемикач радар-режиму (день/ніч)" onclick="toggleRadar()">
       <svg class="tool-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
         <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
         <path d="M 8 8 A 5 5 0 0 0 8 16 M 16 8 A 5 5 0 0 1 16 16 M 5 5 A 10 10 0 0 0 5 19 M 19 5 A 10 10 0 0 1 19 19"/>
@@ -396,7 +462,16 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.5, 36.0], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+
+  // Карти: Світла (OSM) та Темна тактична (CartoDB Dark Matter зі скріншота)
+  const lightTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 });
+  const darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
+    maxZoom: 19, 
+    subdomains: 'abcd' 
+  });
+
+  // За замовчуванням ставимо темний шар
+  darkTileLayer.addTo(map);
 
   let targets = [];
   let layerObjects = {};
@@ -423,6 +498,24 @@
     'Су-35':        { speedMin: 900, speedMax: 1050 },
     'Баллістична ракета': { speedMin: 2000, speedMax: 2500 }
   };
+
+  // Кольори цілей згідно зі скріншотом
+  function getTargetColor(type, isDark) {
+    if (!isDark) return '#e0405a';
+    switch(type) {
+      case 'Ударний дрон':
+        return '#ff2a85'; // Рожево-малиновий трикутник (як на скрині)
+      case 'Су-34':
+      case 'Су-35':
+        return '#ff5722'; // Яскравий помаранчево-червоний винищувач (як на скрині)
+      case 'КАБ':
+        return '#ff9800'; // Янтарний
+      case 'Баллістична ракета':
+        return '#ff1744'; // Яскраво-червоний
+      default:
+        return '#ff3b30';
+    }
+  }
 
   function updateClock() {
     const now = new Date();
@@ -469,7 +562,6 @@
     targets.forEach(t => {
       if (!t.active) return;
 
-      // Плавний доворот курсу в польоті
       const isTurning = (t.targetHeading !== undefined && t.heading !== t.targetHeading);
       if (isTurning) {
         t.heading = lerpHeading(t.heading, t.targetHeading, 4);
@@ -481,7 +573,6 @@
       t.lng = newCoords[1];
 
       const currentSegment = t.segments[t.segments.length - 1];
-      // Під час віражу записуємо точки частіше для ідеальної дуги
       if (isTurning || tickCount % 3 === 0) {
         currentSegment.push([t.lat, t.lng]);
       }
@@ -516,14 +607,18 @@
   let tempPreviewMarker = null;
   let tempGuideLine = null;
 
-  const icons = {
-    'Ударний дрон': `<path d="M 48,10 L 52,10 L 52,30 L 85,75 L 85,85 L 52,85 L 52,90 L 48,90 L 48,85 L 15,85 L 15,75 L 48,30 Z" fill="#e0405a"/>`,
-    'КАБ': `<path d="M 44,10 Q 50,0 56,10 L 56,40 L 90,45 L 90,50 L 56,50 L 56,80 L 66,90 L 66,95 L 56,90 L 56,100 L 44,100 L 44,90 L 34,95 L 34,90 L 44,80 L 44,50 L 10,50 L 10,45 L 44,40 Z" fill="#e0405a"/>`,
-    'Су-34': `<path d="M 47,5 Q 50,-1 53,5 L 54,20 L 62,23 L 62,27 L 55,31 L 60,45 L 95,70 L 95,75 L 62,70 L 62,83 L 72,93 L 72,97 L 55,90 L 53,103 L 47,103 L 45,90 L 28,97 L 28,93 L 38,83 L 38,70 L 5,75 L 5,70 L 40,45 L 45,31 L 38,27 L 38,23 L 46,20 Z" fill="#e0405a"/>`,
-    'Су-35': `<path d="M 49,0 Q 50,-5 51,0 L 53,25 L 60,45 L 95,70 L 95,75 L 60,70 L 60,85 L 72,95 L 72,99 L 56,93 L 56,103 L 44,103 L 44,93 L 28,99 L 28,95 L 40,85 L 40,70 L 5,75 L 5,70 L 40,45 L 47,25 Z" fill="#e0405a"/>`,
-    'Баллістична ракета': `<g fill="none" stroke="#e0405a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 50 8 L 55 15 L 55 32 L 50 38 L 45 32 L 45 15 Z" fill="#e0405a"/><rect x="46" y="32" width="8" height="28" rx="2"/><line x1="48" y1="36" x2="52" y2="36"/><line x1="48" y1="42" x2="52" y2="42"/><line x1="48" y1="48" x2="52" y2="48"/><line x1="48" y1="54" x2="52" y2="54"/><path d="M 44 58 L 38 65 L 38 72 M 56 58 L 62 65 L 62 72"/><path d="M 46 60 L 42 70 Q 42 75 45 77 M 54 60 L 58 70 Q 58 75 55 77"/></g>`,
-    '__default__': `<circle cx="50" cy="50" r="26" fill="#e0405a"/><path d="M50 18 L50 4 M50 82 L50 96" stroke="#e0405a" stroke-width="6"/>`
-  };
+  function getIconSvg(type, color) {
+    const icons = {
+      // Стилізована дельта-стріла дрона (як фуксія-маркер на карті)
+      'Ударний дрон': `<polygon points="50,15 88,85 50,70 12,85" fill="${color}"/>`,
+      'КАБ': `<path d="M 44,10 Q 50,0 56,10 L 56,40 L 90,45 L 90,50 L 56,50 L 56,80 L 66,90 L 66,95 L 56,90 L 56,100 L 44,100 L 44,90 L 34,95 L 34,90 L 44,80 L 44,50 L 10,50 L 10,45 L 44,40 Z" fill="${color}"/>`,
+      'Су-34': `<path d="M 47,5 Q 50,-1 53,5 L 54,20 L 62,23 L 62,27 L 55,31 L 60,45 L 95,70 L 95,75 L 62,70 L 62,83 L 72,93 L 72,97 L 55,90 L 53,103 L 47,103 L 45,90 L 28,97 L 28,93 L 38,83 L 38,70 L 5,75 L 5,70 L 40,45 L 45,31 L 38,27 L 38,23 L 46,20 Z" fill="${color}"/>`,
+      'Су-35': `<path d="M 49,0 Q 50,-5 51,0 L 53,25 L 60,45 L 95,70 L 95,75 L 60,70 L 60,85 L 72,95 L 72,99 L 56,93 L 56,103 L 44,103 L 44,93 L 28,99 L 28,95 L 40,85 L 40,70 L 5,75 L 5,70 L 40,45 L 47,25 Z" fill="${color}"/>`,
+      'Баллістична ракета': `<g fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 50 8 L 55 15 L 55 32 L 50 38 L 45 32 L 45 15 Z" fill="${color}"/><rect x="46" y="32" width="8" height="28" rx="2"/><line x1="48" y1="36" x2="52" y2="36"/><line x1="48" y1="42" x2="52" y2="42"/><line x1="48" y1="48" x2="52" y2="48"/><line x1="48" y1="54" x2="52" y2="54"/><path d="M 44 58 L 38 65 L 38 72 M 56 58 L 62 65 L 62 72"/><path d="M 46 60 L 42 70 Q 42 75 45 77 M 54 60 L 58 70 Q 58 75 55 77"/></g>`,
+      '__default__': `<circle cx="50" cy="50" r="26" fill="${color}"/><path d="M50 18 L50 4 M50 82 L50 96" stroke="${color}" stroke-width="6"/>`
+    };
+    return icons[type] || icons['__default__'];
+  }
 
   function lerpHeading(current, target, step = 8) {
     let diff = target - current;
@@ -533,11 +628,9 @@
     return (current + Math.sign(diff) * step + 360) % 360;
   }
 
-  // Високоточне заокруглення кутів кривими Безьє
   function smoothSegment(points, steps = 10) {
     if (!points || points.length <= 2) return points || [];
     
-    // Фільтрація надлишкових точок, що збігаються
     const clean = [points[0]];
     for (let i = 1; i < points.length; i++) {
       const dLat = Math.abs(points[i][0] - clean[clean.length - 1][0]);
@@ -561,13 +654,11 @@
 
       if (d1 < 1e-6 || d2 < 1e-6) continue;
 
-      // Радіус заокруглення адаптивно до довжини сусідніх відрізків
       const r = Math.min(d1 * 0.45, d2 * 0.45);
       const start = [p1[0] + (v1[0] / d1) * r, p1[1] + (v1[1] / d1) * r];
       const end = [p1[0] + (v2[0] / d2) * r, p1[1] + (v2[1] / d2) * r];
 
       result.push(start);
-      // Генерація гладкої тангенціальної дуги
       for (let s = 1; s < steps; s++) {
         const t = s / steps;
         const inv = 1 - t;
@@ -600,17 +691,21 @@
   }
 
   function createTargetIcon(t) {
-    const svgPath = icons[t.type] || icons['__default__'];
+    const isDark = document.body.classList.contains('radar-active');
+    const color = getTargetColor(t.type, isDark);
+    const svgPath = getIconSvg(t.type, color);
     const scale = t.type === 'Баллістична ракета' ? ' scale(1.4)' : '';
+    const glowFilter = isDark ? `filter: drop-shadow(0 0 5px ${color});` : '';
+
     const html = `
       <div class="target-container">
-        <svg class="target-icon" style="transform: rotate(${t.heading}deg)${scale};" viewBox="0 0 100 100">${svgPath}</svg>
-        <div class="target-info">
+        <svg class="target-icon" style="transform: rotate(${t.heading}deg)${scale}; ${glowFilter}" viewBox="0 0 100 100">${svgPath}</svg>
+        <div class="target-info" style="color: ${color};">
           <div>${t.type}</div>
           <div>${t.id} ПП</div>
           <div class="course-wrapper">
             <svg width="22" height="6" viewBox="0 0 22 6"><line x1="0" y1="3" x2="22" y2="3" stroke="#34c759" stroke-width="2" stroke-dasharray="6,4" /></svg>
-            <span>${Math.round(t.heading)}°</span>
+            <span style="color:${isDark ? '#e0e0e0' : 'inherit'};">${Math.round(t.heading)}°</span>
           </div>
         </div>
       </div>
@@ -638,15 +733,20 @@
 
     let activeCount = 0;
     let renderedRows = 0;
+    const isDark = document.body.classList.contains('radar-active');
 
     targets.forEach((t) => {
       layerObjects[t.id] = {};
+      const color = getTargetColor(t.type, isDark);
 
       if (t.active) {
         activeCount++;
         const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
         layerObjects[t.id].ray = L.polyline([[t.lat, t.lng], rayEnd], { 
-          color: '#555', weight: 1.5, opacity: 0.8, className: 'vector-ray' 
+          color: isDark ? '#ffffff' : '#555555', 
+          weight: 1.5, 
+          opacity: isDark ? 0.75 : 0.8, 
+          className: 'vector-ray' 
         }).addTo(map);
 
         if (t.segments && t.segments.length > 0) {
@@ -655,9 +755,14 @@
           if (lastSeg.length === 0 || lastSeg[lastSeg.length - 1][0] !== t.lat) {
             lastSeg.push([t.lat, t.lng]);
           }
-          // smoothFactor: 0 зберігає всі розраховані точки без огрублення
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
-            color: '#e0405a', weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line'
+            color: color, 
+            weight: 2.2, 
+            opacity: 0.9, 
+            smoothFactor: 0, 
+            lineCap: 'round', 
+            lineJoin: 'round', 
+            className: 'trail-line'
           }).addTo(map);
         }
 
@@ -667,7 +772,7 @@
         renderedRows++;
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34c759;margin-right:5px; box-shadow: 0 0 4px #34c759;"></span>${t.id}</td>
+          <td><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34c759;margin-right:5px; box-shadow: 0 0 5px #34c759;"></span>${t.id}</td>
           <td class="muted">A0</td>
           <td class="muted">D0</td>
           <td>1</td>
@@ -694,7 +799,13 @@
       } else {
         if (t.segments && t.segments.length > 0) {
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(t.segments), {
-            color: '#e02447', weight: 2.2, opacity: 0.85, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-lost'
+            color: color, 
+            weight: 2.2, 
+            opacity: 0.65, 
+            smoothFactor: 0, 
+            lineCap: 'round', 
+            lineJoin: 'round', 
+            className: 'trail-lost'
           }).addTo(map);
         }
 
@@ -767,8 +878,21 @@
     }
   };
 
+  // Перемикач підкладки карт та режимів День / Нічний радар
   window.toggleRadar = () => {
     document.body.classList.toggle('radar-active');
+    const isDark = document.body.classList.contains('radar-active');
+    
+    if (isDark) {
+      map.removeLayer(lightTileLayer);
+      darkTileLayer.addTo(map);
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#12151a');
+    } else {
+      map.removeLayer(darkTileLayer);
+      lightTileLayer.addTo(map);
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f0f0f5');
+    }
+    render();
   };
 
   window.fitAllTargets = () => {
@@ -924,14 +1048,17 @@
   });
 
   map.on('mousemove', function(e) {
+    const isDark = document.body.classList.contains('radar-active');
+
     if (restoringTargetId && restoringStep === 2 && restoreStartPos && tempPreviewMarker) {
       const targetH = calculateHeading(restoreStartPos, e.latlng);
       const t = targets.find(x => x.id === restoringTargetId);
+      const color = getTargetColor(t.type, isDark);
       tempPreviewMarker.setIcon(createTargetIcon({ ...t, heading: targetH }));
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([restoreStartPos, [e.latlng.lat, e.latlng.lng]], {
-        color: '#e0405a', weight: 1.8, opacity: 0.8
+        color: color, weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(targetH)}° (Клікніть для підтвердження)`);
       return;
@@ -943,9 +1070,10 @@
       tempPreviewMarker.setLatLng(e.latlng);
       tempPreviewMarker.setIcon(createTargetIcon(pendingTarget));
 
+      const color = getTargetColor(pendingTarget.type, isDark);
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([pendingTarget.segments[0][0], [e.latlng.lat, e.latlng.lng]], {
-        color: '#e0405a', weight: 1.8, opacity: 0.8
+        color: color, weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(pendingTarget.heading)}° (Клікніть для фіксації)`);
     }
@@ -953,6 +1081,7 @@
     if (reaimTargetId) {
       const t = targets.find(x => x.id === reaimTargetId);
       if (t) {
+        const color = getTargetColor(t.type, isDark);
         const currentSeg = t.segments[t.segments.length - 1];
         const lastPoint = currentSeg[currentSeg.length - 1];
         const targetH = calculateHeading(lastPoint, e.latlng);
@@ -963,7 +1092,7 @@
         }
         if (tempGuideLine) map.removeLayer(tempGuideLine);
         tempGuideLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {
-          color: '#e0405a', weight: 1.8, opacity: 0.8
+          color: color, weight: 1.8, opacity: 0.8
         }).addTo(map);
       }
     }
