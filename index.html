@@ -3,287 +3,305 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#f0f0f5">
+  <meta name="theme-color" content="#252b35">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Tactical Air Track Map - Smooth Trail</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>АРМ «Віраж-ППО» — Мобільне робоче місце</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #e5e5e5; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
-    * { box-sizing: border-box; }
-    #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+    :root {
+      --vp-red: #d91b2b;
+      --vp-blue: #0b62d4;
+      --vp-green: #2fa84f;
+      --vp-yellow: #f5a623;
+      --vp-panel-bg: rgba(30, 36, 46, 0.94);
+      --vp-border: #444d5c;
+      --vp-text: #f0f3f8;
+      --vp-text-muted: #9aa3b2;
+    }
 
-    /* Приховуємо копірайт Leaflet */
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden; background: #1c2128;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; background: #cdd4dc; }
     .leaflet-control-attribution { display: none !important; }
 
-    /* ================= ВЕРХНЯ ПАНЕЛЬ (LIQUID GLASS) ================= */
+    /* ================= 5.3 ВОДЯНИЙ ЗНАК (HEX IP) ================= */
+    .watermark-overlay {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 500; overflow: hidden; opacity: 0.14;
+      display: flex; flex-wrap: wrap; justify-content: space-around; align-content: space-around;
+    }
+    .watermark-node {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 16px; font-weight: 800; color: #475363;
+      transform: rotate(-30deg); padding: 36px 48px; white-space: nowrap;
+    }
+
+    /* ================= 7.3 ВЕРХНЯ ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ (РИС. 7.3) ================= */
+    .target-top-bar {
+      position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 50%;
+      transform: translateX(-50%);
+      background: #6e7682; border: 1px solid #4a515c; border-radius: 4px;
+      color: #fff; display: none; align-items: center; gap: 4px; padding: 3px 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45); z-index: 1200;
+      font-family: ui-monospace, Consolas, monospace; font-size: 12px; font-weight: 700;
+    }
+    .top-bar-cell {
+      background: #878f9b; padding: 3px 8px; border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.25); white-space: nowrap;
+    }
+    .top-bar-btn {
+      width: 28px; height: 26px; border: 1px solid #555d68; border-radius: 3px;
+      background: #7d8591; color: #fff; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; padding: 0;
+    }
+    .top-bar-btn:hover { background: #9da5b2; }
+    .top-bar-btn.active { background: #2fa84f; border-color: #1e7e34; }
+    .top-bar-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ================= ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ ТА КЕРУВАННЯ ================= */
     .top-panel {
       position: absolute; top: 0; left: 0; width: 100%;
       padding-top: env(safe-area-inset-top);
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(24px) saturate(150%);
-      -webkit-backdrop-filter: blur(24px) saturate(150%);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.4);
-      color: #111; font-size: 13px; display: flex; flex-direction: column;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-      transition: all 0.3s ease;
+      background: var(--vp-panel-bg);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--vp-border);
+      color: var(--vp-text); font-size: 12px; display: flex; flex-direction: column;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.35); transition: all 0.3s ease;
       z-index: 1000;
     }
-
     .panel-header {
-      position: relative;
-      display: flex; justify-content: center; align-items: center;
-      padding: 8px 15px; background: transparent; cursor: pointer;
-      font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
-      border-bottom: 1px solid rgba(255,255,255,0.3); user-select: none;
+      position: relative; display: flex; justify-content: center; align-items: center;
+      padding: 7px 15px; cursor: pointer; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.6px; border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .panel-header:hover { background: rgba(255, 255, 255, 0.2); }
-    
-    .panel-toggle { transition: transform 0.3s ease; font-size: 10px; color: #555; font-weight: bold; }
+    .panel-header:hover { background: rgba(255, 255, 255, 0.05); }
+    .panel-toggle { transition: transform 0.3s ease; font-size: 11px; color: var(--vp-text-muted); }
     .top-panel.collapsed .panel-toggle { transform: rotate(-180deg); }
     .top-panel.collapsed .table-container { max-height: 0 !important; border-top: none; }
 
     .clock {
-      position: absolute;
-      right: calc(16px + env(safe-area-inset-right));
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 12px;
-      font-weight: 600;
-      color: #444;
-      letter-spacing: 0.5px;
-      pointer-events: none;
+      position: absolute; right: calc(14px + env(safe-area-inset-right));
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px; font-weight: 700; color: #5cdb7a; letter-spacing: 0.5px;
     }
 
-    .table-container { 
+    .table-container {
       overflow-y: auto; overflow-x: auto; padding: 0; -webkit-overflow-scrolling: touch;
-      max-height: 35vh; transition: max-height 0.3s ease-in-out;
+      max-height: 32vh; transition: max-height 0.3s ease-in-out;
     }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    col.col-id { width: 16%; }
-    col.col-a { width: 10%; }
-    col.col-d { width: 10%; }
-    col.col-qty { width: 10%; }
-    col.col-actions { width: 54%; }
+    col.col-id { width: 20%; }
+    col.col-aff { width: 10%; }
+    col.col-type { width: 18%; }
+    col.col-hv { width: 16%; }
+    col.col-c { width: 10%; }
+    col.col-actions { width: 26%; }
 
-    th { font-weight: 700; color: #444; font-size: 10px; text-transform: uppercase; padding: 6px 10px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.06); letter-spacing: 0.5px; background: rgba(0, 0, 0, 0.02); }
-    td { padding: 6px 10px; font-weight: 600; font-size: 13px; color: #222; border-bottom: 1px solid rgba(0,0,0,0.04); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; }
-    tr:hover td { background: rgba(255, 255, 255, 0.4); }
-    td.muted { color: #888; }
-    th.th-actions, td.td-actions { text-align: right; }
+    th {
+      font-weight: 800; color: #a2adb9; font-size: 10px; text-transform: uppercase;
+      padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--vp-border);
+      background: rgba(0, 0, 0, 0.25);
+    }
+    td {
+      padding: 6px 8px; font-weight: 600; font-size: 12px; color: #e7ecf2;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace;
+    }
+    tr:hover td { background: rgba(255, 255, 255, 0.06); cursor: pointer; }
+    td.td-actions { text-align: right; }
 
-    tr.row-lost td { color: #888 !important; background: rgba(0,0,0,0.03); font-style: italic; }
-    .status-lost-badge { background: #ffebeb; color: #e0405a; font-size: 10px; border: 1px solid #ffb3c1; padding: 2px 5px; border-radius: 4px; margin-right: 6px; font-style: normal; font-family: -apple-system, sans-serif; font-weight: 700;}
-
-    .row-empty { text-align: center; color: #777; font-style: italic; font-weight: 500; padding: 12px; font-family: -apple-system, sans-serif;}
+    /* Індекси належності */
+    .badge-aff { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 800; font-size: 10px; }
+    .badge-pp { background: #4a1217; color: #ff5c6c; border: 1px solid #851c27; }
+    .badge-zl { background: #0c2b54; color: #5ca5ff; border: 1px solid #14498c; }
+    .badge-nv { background: #2f343b; color: #c0c6cf; border: 1px solid #4f5663; }
+    
+    tr.row-lost td { color: #8893a0 !important; background: rgba(0,0,0,0.25); font-style: italic; }
+    .status-lost-badge { background: #3d1b20; color: #ff6475; font-size: 9px; border: 1px solid #792530; padding: 1px 4px; border-radius: 3px; margin-right: 4px; font-weight: 800; }
+    .row-empty { text-align: center; color: #788390; font-style: italic; padding: 12px; }
 
     /* ================= КНОПКИ ДІЙ ================= */
     .btn-action {
-      cursor: pointer; background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(0,0,0,0.1); 
-      width: 28px; height: 28px; border-radius: 6px; margin-left: 4px; padding: 0;
+      cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--vp-border);
+      width: 27px; height: 27px; border-radius: 4px; margin-left: 3px; padding: 0;
       display: inline-flex; justify-content: center; align-items: center; vertical-align: middle;
-      transition: all 0.15s; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+      transition: all 0.15s; color: #fff;
     }
-    .btn-action svg { width: 14px; height: 14px; transition: all 0.15s; }
+    .btn-action svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-action:hover { background: rgba(255, 255, 255, 0.2); }
+    .btn-action.btn-reaim:hover { stroke: #ffd043; }
+    .btn-action.btn-focus:hover { stroke: #2fa84f; }
+    .btn-action.btn-archive:hover { stroke: #ff4757; }
+    .btn-action.btn-restore:hover { stroke: #32d7ff; }
+    .btn-action.btn-delete:hover { stroke: #ff3838; }
+
+    /* ================= 5.1 ПРАВА ПАНЕЛЬ УПРАВЛІННЯ (РИС. 5.1, 14.1) ================= */
+    .right-toolbar {
+      position: absolute; right: calc(10px + env(safe-area-inset-right));
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      z-index: 1000;
+    }
+    .tool-btn {
+      width: 44px; height: 44px; background: #ffffff;
+      border: 1px solid #aeb6c2; border-radius: 8px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+      display: flex; justify-content: center; align-items: center;
+      cursor: pointer; color: #28303d; transition: all 0.15s;
+    }
+    .tool-btn:hover { background: #f0f3f7; transform: scale(1.02); }
+    .tool-btn:active { background: #dde2e8; transform: scale(0.98); }
+    .tool-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     
-    .btn-action:hover { background: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.15); }
-    .btn-action:active { background: rgba(0,0,0,0.05); box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+    .tool-btn.btn-active { background: #2fa84f; color: #fff; border-color: #1e7e34; }
+    .tool-btn.btn-danger { background: #d91b2b; color: #fff; border-color: #93101c; }
 
-    .btn-reaim:hover svg .plane-path { fill: #c09000; }
-    .btn-reaim:hover svg .blip-dot { fill: #e0405a; }
-    .btn-focus:hover svg { fill: #34c759; }
-    .btn-archive:hover svg { stroke: #e0405a; }
-    .btn-restore:hover svg { stroke: #007aff; }
-    .btn-delete:hover svg { stroke: #ff3b30; }
-
-    .btn-reaim svg .plane-path { fill: #555; stroke: none; }
-    .btn-reaim svg .blip-dot { fill: #555; stroke: none; }
-    .btn-focus svg { fill: #555; stroke: none; }
-    .btn-archive svg { stroke: #555; fill: none; }
-    .btn-restore svg { stroke: #555; fill: none; }
-    .btn-delete svg { stroke: #555; fill: none; }
-
-    /* ================= ПРАВИЙ БЛОК ІНСТРУМЕНТІВ ================= */
-    .right-tools-wrapper {
-      position: absolute; right: 20px; bottom: 30px; z-index: 1000;
-      right: calc(20px + env(safe-area-inset-right));
-      bottom: calc(30px + env(safe-area-inset-bottom));
-      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    /* Кругла кнопка стану зв'язку та виклику Меню (п. 5.1, Рис. 5.1) */
+    .status-conn-btn {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: #2fa84f; color: #fff; border: 2.5px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.35); transition: 0.2s;
     }
-    .tools-block {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(24px) saturate(150%);
-      -webkit-backdrop-filter: blur(24px) saturate(150%);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.08); 
-      border-radius: 10px; overflow: hidden;
-    }
-    .tools-row-split { display: flex; }
-    .split-btn {
-      width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
-      border-right: 1px solid rgba(0,0,0,0.06); cursor: pointer; transition: 0.1s; background: transparent;
-    }
-    .split-btn:last-child { border-right: none; }
-    .tools-col { display: flex; flex-direction: column; width: 44px; }
-    .full-btn {
-      width: 100%; height: 42px; display: flex; justify-content: center; align-items: center;
-      border-bottom: 1px solid rgba(0,0,0,0.06); cursor: pointer; transition: 0.1s; background: transparent;
-    }
-    .full-btn:last-child { border-bottom: none; }
-    .border-thick { border-bottom: 2px solid rgba(0,0,0,0.12); }
+    .status-conn-btn.disconnected { background: #d91b2b; }
 
-    .tools-trash-wrapper { position: relative; }
-    .badge-counter {
-      position: absolute; left: -12px; bottom: -4px;
-      width: 26px; height: 26px; background: #34c759; border: 2px solid #fff;
-      border-radius: 50%; display: flex; justify-content: center; align-items: center;
-      color: #fff; font-weight: 800; font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      z-index: 1001;
+    /* ================= МАРКЕРИ ТА ФОРМУЛЯРИ «ВІРАЖ-ППО» (п. 7.1) ================= */
+    .virazh-marker-wrap { position: relative; width: 34px; height: 34px; pointer-events: auto; }
+    .virazh-symbol-box {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.6s linear; transform-origin: center center;
     }
-    .trash-btn { width: 44px; height: 42px; display: flex; justify-content: center; align-items: center; cursor: pointer; background: transparent; }
+    .virazh-symbol-svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.85)); }
 
-    .split-btn:hover, .full-btn:hover, .trash-btn:hover { background: rgba(255,255,255,0.4); }
-    .split-btn:active, .full-btn:active, .trash-btn:active { background: rgba(0,0,0,0.05); }
+    /* Кола швидкісних цілей (>1200 км/г, п. 7.1) */
+    .speed-circle {
+      position: absolute; top: -5px; left: -5px; width: 42px; height: 42px;
+      border: 2px solid #d91b2b; border-radius: 50%; pointer-events: none;
+    }
+    .selected-circle {
+      position: absolute; top: -6px; left: -6px; width: 44px; height: 44px;
+      border: 2px dashed #2fa84f; border-radius: 50%; pointer-events: none;
+    }
 
-    .tool-icon { stroke: #444; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: 0.2s; }
-    .icon-red { stroke: #ff3b30; }
-    .icon-green { stroke: #34c759; stroke-width: 2.5; }
+    /* Смуга статусу зникнення під маркером (3 сегменти, п. 7.1, Рис. 7.1) */
+    .status-bar-box {
+      position: absolute; bottom: -5px; left: 3px; width: 26px; height: 3.5px;
+      display: flex; gap: 1.5px;
+    }
+    .status-segment { flex: 1; height: 100%; border-radius: 1px; background: #2fa84f; }
+    .status-segment.warn { background: #f5a623; }
+    .status-segment.lost { background: #d91b2b; }
+    .status-segment.dim { background: rgba(120,120,120,0.35); }
 
-    /* ================= МОДАЛЬНЕ ВІКНО ================= */
-    .target-modal {
+    /* Формуляр цілі */
+    .virazh-formular {
+      position: absolute; top: -4px; left: 35px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px; font-weight: 700; line-height: 1.15;
+      white-space: nowrap; pointer-events: none;
+      text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
+    }
+    .formular-pp { color: #ff3344; }
+    .formular-zl { color: #4aa3ff; }
+    .formular-nv { color: #d0d7de; }
+    .formular-type { font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 0 3px #000; }
+
+    body.hide-labels .virazh-formular { display: none !important; }
+
+    /* Плавні траєкторії без заломів */
+    .trail-line { stroke-linecap: round !important; stroke-linejoin: round !important; }
+    .trail-lost { stroke-linecap: round !important; stroke-linejoin: round !important; stroke-dasharray: 4, 6; }
+
+    /* ================= 11.4 ТЕМНА МАПА (РАДАР) ================= */
+    body.radar-active .leaflet-tile-pane {
+      filter: invert(90%) hue-rotate(180deg) brightness(90%) contrast(105%) grayscale(25%);
+    }
+
+    /* ================= МОДАЛЬНІ ВІКНА ================= */
+    .virazh-modal {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(30px) saturate(200%);
-      -webkit-backdrop-filter: blur(30px) saturate(200%);
-      padding: 20px 25px; border: 1px solid rgba(255,255,255,0.8); border-radius: 12px;
-      color: #333; z-index: 2000; display: none; flex-direction: column; gap: 15px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.15); width: min(380px, 88vw); max-height: 85vh; overflow-y: auto;
+      background: #ffffff; border-radius: 12px; color: #1e242d;
+      box-shadow: 0 16px 45px rgba(0,0,0,0.45); z-index: 2000;
+      display: none; flex-direction: column; padding: 20px;
+      width: min(390px, 92vw); max-height: 85vh; overflow-y: auto;
     }
-    .target-modal h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: #111; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 8px;}
-    
-    .modal-section { border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 12px; }
-    .modal-section:last-child { border-bottom: none; }
-    
-    .modal-field { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
-    .modal-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; font-weight: 700; }
-    .modal-field input, .modal-field select { 
-      background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.1); color: #333; padding: 8px 10px; border-radius: 6px; font-weight: 600; font-size: 14px; transition: 0.2s;
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #e1e5eb; padding-bottom: 8px; margin-bottom: 12px;
     }
-    .modal-field input:focus, .modal-field select:focus { outline: none; border-color: #007aff; background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.2); }
-    .modal-field input::placeholder { color: #555; font-style: italic; font-weight: normal; }
-    
-    .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
-    .modal-btn { flex: 1; background: #007aff; border: none; color: #fff; padding: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; border-radius: 8px; transition: 0.2s; font-size: 12px; }
-    .modal-btn:hover { background: #0060cc; }
-    .modal-btn.secondary { background: rgba(0,0,0,0.05); color: #555; }
-    .modal-btn.secondary:hover { background: rgba(0,0,0,0.1); color: #333; }
-    .modal-close { position: absolute; top: 12px; right: 15px; cursor: pointer; color: #999; font-weight: bold; font-size: 16px; }
-    .modal-close:hover { color: #333; }
+    .modal-head h3 { margin: 0; font-size: 15px; font-weight: 800; text-transform: uppercase; color: #1a232f; }
+    .modal-close { font-size: 18px; color: #8a94a6; cursor: pointer; font-weight: bold; }
+    .modal-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 11px; }
+    .modal-row label { font-size: 11px; font-weight: 700; color: #536074; text-transform: uppercase; }
+    .modal-row input, .modal-row select {
+      padding: 8px 10px; border: 1px solid #ced4de; border-radius: 6px;
+      font-size: 13px; font-weight: 600; color: #1a222c; outline: none;
+    }
+    .modal-row input:focus, .modal-row select:focus { border-color: #0b62d4; box-shadow: 0 0 0 2px rgba(11,98,212,0.18); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-v {
+      flex: 1; padding: 11px; border-radius: 7px; border: none;
+      font-weight: 700; font-size: 12px; cursor: pointer; text-align: center; text-transform: uppercase;
+    }
+    .btn-v-primary { background: #0b62d4; color: #fff; }
+    .btn-v-primary:hover { background: #084aa3; }
+    .btn-v-secondary { background: #eef2f6; color: #414d5f; }
 
-    /* ================= ПІДКАЗКА (HUD) ================= */
+    /* Радіо-групи для вікна ПВС (рис. 14.2) */
+    .pvs-radio-group { display: flex; flex-wrap: wrap; gap: 6px; margin: 3px 0 6px; }
+    .pvs-radio-chip {
+      display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600;
+      background: #f1f4f8; padding: 5px 9px; border-radius: 16px; cursor: pointer;
+    }
+
+    /* Підказка HUD */
     .hud-hint {
-      position: absolute; top: calc(80px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(12px); color: #fff; padding: 10px 20px;
-      font-size: 13px; font-weight: 600; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-      z-index: 1000; display: none; pointer-events: none; letter-spacing: 0.5px;
-      max-width: 90vw; text-align: center; white-space: normal;
+      position: absolute; top: calc(65px + env(safe-area-inset-top)); left: 50%;
+      transform: translateX(-50%); background: rgba(18, 23, 31, 0.92);
+      color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 12px;
+      font-weight: 700; z-index: 1300; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      pointer-events: none; border: 1px solid rgba(255,255,255,0.25); text-align: center;
     }
 
-    /* ================= МАРКЕРИ ================= */
-    .target-container { position: relative; width: 140px; height: 50px; pointer-events: auto; }
-    .target-icon { position: absolute; top: 0; left: 0; width: 28px; height: 32px; transform-origin: center center; transition: transform 1.2s cubic-bezier(0.1, 1, 0.1, 1); }
-    
-    .target-info {
-      position: absolute; top: 16px; left: 36px; transform: translateY(-50%);
-      font-size: 13px; line-height: 1.2; font-weight: 700; color: #c20a35;
-      text-shadow: none; 
-      white-space: nowrap; transition: color 0.3s, opacity 0.2s ease;
-    }
-    .course-wrapper { display: flex; align-items: center; gap: 4px; margin-top: 1px; }
-
-    body.hide-labels .target-info { display: none !important; }
-
-    /* Плавні стилі ліній без гострих заломів */
-    .trail-line {
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-    }
-    .trail-lost {
-      stroke-linecap: round !important;
-      stroke-linejoin: round !important;
-    }
-
-    /* ================= ТЕМНИЙ РЕЖИМ (РАДАР) ================= */
-    .leaflet-tile-pane { transition: filter 0.5s ease; }
-    
-    body.radar-active .leaflet-tile-pane { filter: invert(90%) hue-rotate(180deg) brightness(100%) contrast(90%) grayscale(20%); }
-    
-    body.radar-active .top-panel, body.radar-active .tools-block {
-      background: rgba(10, 15, 10, 0.3); border-color: rgba(255, 255, 255, 0.15); color: #eee;
-    }
-    body.radar-active .panel-header { background: transparent; color: #fff; border-color: rgba(255,255,255,0.1); }
-    body.radar-active .panel-header:hover { background: rgba(255,255,255,0.05); }
-    body.radar-active .clock { color: #aaa; }
-    body.radar-active th { background: rgba(0,0,0,0.2); color: #aaa; border-color: rgba(255,255,255,0.05); }
-    body.radar-active td { color: #fff; border-color: rgba(255,255,255,0.05); }
-    body.radar-active tr:hover td { background: rgba(255,255,255,0.1); }
-    body.radar-active tr.row-lost td { background: rgba(0,0,0,0.3); color: #777 !important; }
-    body.radar-active .status-lost-badge { background: #3a1a1a; border-color: #5a2a2a; }
-    
-    body.radar-active .split-btn, body.radar-active .full-btn, body.radar-active .trash-btn { border-color: rgba(255,255,255,0.05); }
-    body.radar-active .split-btn:hover, body.radar-active .full-btn:hover, body.radar-active .trash-btn:hover { background: rgba(255,255,255,0.1); }
-    
-    body.radar-active .btn-action { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.1); color: #fff; box-shadow: none; }
-    body.radar-active .btn-action:hover { background: rgba(255,255,255,0.2); }
-    body.radar-active .btn-action svg, body.radar-active .tool-icon { stroke: #ddd; }
-    body.radar-active .btn-reaim svg .plane-path, body.radar-active .btn-reaim svg .blip-dot, body.radar-active .btn-focus svg { fill: #ddd; }
-
-    body.radar-active .btn-radar { background: rgba(0,0,0,0.4); }
-    body.radar-active .btn-radar .tool-icon { stroke: #34c759; }
-    
-    body.radar-active .vector-ray { stroke: #ffffff !important; opacity: 0.7 !important; }
-    body.radar-active .trail-line { stroke: #ff3355 !important; opacity: 0.85 !important; filter: none !important; }
-    body.radar-active .trail-lost { stroke: #ff3355 !important; opacity: 0.6 !important; filter: none !important; }
-    body.radar-active .target-icon { filter: none !important; }
-    body.radar-active .target-info { color: #ff4d6d; text-shadow: none; }
-
-    /* ================= МОБІЛЬНА АДАПТАЦІЯ ================= */
+    /* Мобільна адаптація */
     @media (max-width: 700px), (pointer: coarse) {
-      .table-container { overflow-x: auto; max-height: 30vh; }
-      table { table-layout: auto; min-width: 580px; }
-      th, td { padding: 6px 8px; font-size: 12px; }
-      th { font-size: 9px; }
-      
-      .btn-action { width: 34px; height: 34px; margin-left: 2px; }
-      .btn-action svg { width: 16px; height: 16px; }
-      
-      .right-tools-wrapper { right: calc(10px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); gap: 10px; }
-      .split-btn { width: 44px; height: 44px; }
-      .tools-col { width: 48px; }
-      .full-btn { height: 46px; }
-      .trash-btn { width: 48px; height: 44px; }
-      .badge-counter { width: 32px; height: 32px; font-size: 12px; left: -14px; bottom: -6px; }
-      
-      .target-modal { padding: 18px 20px; gap: 12px; }
+      .table-container { max-height: 26vh; }
+      th, td { padding: 5px 6px; font-size: 11px; }
+      .right-toolbar { right: calc(8px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); gap: 6px; }
+      .tool-btn { width: 42px; height: 42px; }
+      .status-conn-btn { width: 44px; height: 44px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ВЕРХНЯ ЗГОРТАНА ПАНЕЛЬ -->
+<!-- 5.3 ВОДЯНИЙ ЗНАК (IP-АДРЕСА В ШІСТНАДЦЯТКОВОМУ ВИГЛЯДІ) -->
+<div class="watermark-overlay" id="watermarkLayer"></div>
+
+<!-- ВЕРХНЯ ЗГОРТАНА ПАНЕЛЬ: СПИСОК ЦІЛЕЙ ТА ГОДИННИК -->
 <div class="top-panel" id="mainTopPanel">
   <div class="panel-header" onclick="toggleTopPanel()">
-    <div class="panel-toggle">▼ ЗГОРНУТИ</div>
+    <div class="panel-toggle">▼ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (ЗГОРНУТИ)</div>
     <div id="clock" class="clock">00:00:00</div>
   </div>
   <div class="table-container">
     <table>
       <colgroup>
-        <col class="col-id"><col class="col-a"><col class="col-d">
-        <col class="col-qty"><col class="col-actions">
+        <col class="col-id"><col class="col-aff"><col class="col-type">
+        <col class="col-hv"><col class="col-c"><col class="col-actions">
       </colgroup>
       <thead>
         <tr>
-          <th>ID</th><th>A</th><th>D</th><th>К-сть</th><th class="th-actions">Команди</th>
+          <th>№ / Заведення</th><th>Належність</th><th>РДЦ (Тип)</th><th>H (гм) / V</th><th>Курс</th><th class="td-actions">Команди</th>
         </tr>
       </thead>
       <tbody id="targetsTableBody"></tbody>
@@ -291,103 +309,202 @@
   </div>
 </div>
 
-<div id="hudHint" class="hud-hint">Очікування...</div>
+<!-- 7.3 ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ (РИС. 7.3) -->
+<div id="targetTopBar" class="target-top-bar">
+  <div class="top-bar-cell" id="topBarId">9743р</div>
+  <div class="top-bar-cell" id="topBarAzimuth">A0</div>
+  <div class="top-bar-cell" id="topBarDistance">D0</div>
+  <div class="top-bar-cell" id="topBarHeight">H33.0</div>
+  <div class="top-bar-cell" id="topBarSpeed">V88</div>
+  <div class="top-bar-cell" id="topBarQty">1</div>
+  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;">20:00 (0)</div>
+  <button class="top-bar-btn" title="Змінити вектор польоту (Reaim)" onclick="reaimCurrentTarget()">
+    <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
+  </button>
+  <button class="top-bar-btn" id="btnExtrapolateTop" title="Екстраполяція положення (коло)" onclick="toggleCurrentExtrapolation()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg>
+  </button>
+  <button class="top-bar-btn" title="Закрити панель (зняти вибір)" onclick="deselectTarget()">
+    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5"/></svg>
+  </button>
+</div>
 
-<!-- МОДАЛКА ДОДАВАННЯ -->
-<div id="targetModal" class="target-modal">
-  <div class="modal-close" onclick="closeModal()">✕</div>
-  <h3>Введення / Відновлення цілі</h3>
+<div id="hudHint" class="hud-hint">Очікування команд...</div>
+
+<!-- МОДАЛЬНЕ ВІКНО: ВВЕДЕННЯ / ВІДНОВЛЕННЯ ЦІЛІ (РДЦ) -->
+<div id="targetModal" class="virazh-modal">
+  <div class="modal-head">
+    <h3>Введення / Відновлення цілі</h3>
+    <span class="modal-close" onclick="closeModal('targetModal')">✕</span>
+  </div>
   
-  <div class="modal-section">
-    <div class="modal-field">
-      <label>🆔 Бортовий номер (ID)</label>
-      <input type="text" id="modalId" placeholder="АВТО (залишіть пустим для нового)">
-      <div class="modal-info">Введіть старий ID, щоб відновити втрачену ціль</div>
-    </div>
+  <div class="modal-row">
+    <label>🆔 Бортовий номер цілі</label>
+    <input type="text" id="modalId" placeholder="АВТО (залиште пустим для генерації)">
   </div>
 
-  <div class="modal-section">
-    <div class="modal-field">
-      <label>🛩️ Тип борта</label>
-      <select id="modalType">
-        <option value="Ударний дрон">Ударний дрон (150–185 км/год)</option>
-        <option value="КАБ">КАБ — керована авіаційна бомба (700–900)</option>
-        <option value="Су-34">Су-34 — винищувач-бомбардувальник (850–1000)</option>
-        <option value="Су-35">Су-35 — винищувач (900–1050)</option>
-        <option value="Баллістична ракета">Баллістична ракета Х-47М2 (2000–2500)</option>
-      </select>
-    </div>
+  <div class="modal-row">
+    <label>Індекс належності (п. 7.1)</label>
+    <select id="modalAffiliation">
+      <option value="ПП">Повітряний противник (ПП) — Червоний</option>
+      <option value="ЗЛ">Свій літальний апарат (ЗЛ) — Синій</option>
+      <option value="НВ">Невизначений / Цивільний (НВ) — Чорний</option>
+    </select>
   </div>
 
-  <div class="modal-btns">
-    <button class="modal-btn secondary" onclick="closeModal()">Скасувати</button>
-    <button class="modal-btn" onclick="confirmAddTarget()">Вказати точку</button>
+  <div class="modal-row">
+    <label>🛩️ Розвідувальні дані цілі (РДЦ)</label>
+    <select id="modalType">
+      <option value="Ударний дрон">Ударний дрон (Shahed-136/Герань)</option>
+      <option value="Supercam">Розвідувальний БпЛА (Supercam/Орлан)</option>
+      <option value="КАБ">КАБ — керована авіаційна бомба</option>
+      <option value="Крилата ракета">Крилата ракета (КР)</option>
+      <option value="Су-34">Су-34 — винищувач-бомбардувальник</option>
+      <option value="Су-35">Су-35 — винищувач</option>
+      <option value="Баллістична ракета">Баллістична ракета (Х-47М2 Кинджал)</option>
+      <option value="РЛС">РЛС-відмітка (без визначення типу)</option>
+      <option value="ASTERIX">ASTERIX / RADA (первинна відмітка)</option>
+    </select>
+  </div>
+
+  <div class="modal-row">
+    <label>Висота цілі H (гектометри, 1 гм = 100 м)</label>
+    <input type="number" id="modalHeight" value="15" placeholder="напр. 15 (1500 м)">
+  </div>
+
+  <div class="modal-row">
+    <label>Джерело інформації (п. 7.1)</label>
+    <select id="modalSource">
+      <option value="РЛС">РЛС радіотехнічних військ (РТВ)</option>
+      <option value="ПВС">Пост візуального спостереження (ПВС)</option>
+      <option value="еРакета">Акустична система «еРакета» / «Звук»</option>
+      <option value="єППО">Система спостереження «єППО»</option>
+      <option value="ASTERIX">Протокол ASTERIX (RADA RPS)</option>
+    </select>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn-v btn-v-secondary" onclick="closeModal('targetModal')">Скасувати</button>
+    <button class="btn-v btn-v-primary" onclick="confirmAddTarget()">Вказати точку на карті</button>
   </div>
 </div>
 
-<!-- ПАНЕЛЬ ІНСТРУМЕНТІВ -->
-<div class="right-tools-wrapper">
-  <div class="tools-block tools-row-split">
-    <div class="split-btn" title="Скинути сліди (видалити неактивні)" onclick="clearGhosts()">
-      <svg class="tool-icon icon-red" viewBox="0 0 24 24" style="width: 15px; height: 15px;">
-        <path d="M 12 4 A 8 8 0 1 1 4 12" stroke-dasharray="3 3"/>
-        <polyline points="12,1 12,4 15,4"/>
-      </svg>
-    </div>
-    <div class="split-btn" title="Пошук цілі" onclick="searchTarget()">
-      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 14px; height: 14px;">
-        <circle cx="10" cy="10" r="7"/><line x1="15" y1="15" x2="21" y2="21"/>
-      </svg>
+<!-- МОДАЛЬНЕ ВІКНО: ДОПОВІДЬ ПВС (РИС. 14.2) -->
+<div id="pvsModal" class="virazh-modal">
+  <div class="modal-head">
+    <h3>Доповідь про виявлену ціль (ПВС)</h3>
+    <span class="modal-close" onclick="closeModal('pvsModal')">✕</span>
+  </div>
+  
+  <div class="modal-row">
+    <label>Тип цілі</label>
+    <div class="pvs-radio-group">
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="КР"> КР</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="БпЛА" checked> БпЛА</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Літак"> Літак</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Вертоліт"> Вертоліт</label>
     </div>
   </div>
 
-  <div class="tools-block tools-col">
-    <div class="full-btn border-thick" id="btnSim" title="Симуляція руху (Play/Pause)" onclick="toggleSimulation()">
-      <svg id="simIcon" class="tool-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
-        <polygon points="5,3 19,12 5,21"/>
-      </svg>
-    </div>
-
-    <div class="full-btn" id="btnToggleLabels" title="Показати/приховати назви цілей на карті" onclick="toggleTargetLabels()">
-      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
-        <path d="M4 7V4h16v3"/>
-        <line x1="12" y1="4" x2="12" y2="20"/>
-        <line x1="9" y1="20" x2="15" y2="20"/>
-      </svg>
-    </div>
-
-    <div class="full-btn btn-radar" title="Темний радар-режим" onclick="toggleRadar()">
-      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-        <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
-        <path d="M 8 8 A 5 5 0 0 0 8 16 M 16 8 A 5 5 0 0 1 16 16 M 5 5 A 10 10 0 0 0 5 19 M 19 5 A 10 10 0 0 1 19 19"/>
-      </svg>
-    </div>
-    <div class="full-btn border-thick" title="Охопити всі цілі" onclick="fitAllTargets()">
-      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-        <line x1="6" y1="6" x2="15" y2="15"/>
-        <polyline points="15,9 15,15 9,15"/>
-        <line x1="19" y1="4" x2="19" y2="20"/>
-      </svg>
-    </div>
-    <div class="full-btn" title="Повний екран" onclick="toggleFullscreen()">
-      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
-        <rect x="3" y="6" width="18" height="12" rx="2"/>
-      </svg>
-    </div>
-    <div class="full-btn border-thick" title="Додати ціль" onclick="openAddModal()">
-      <svg class="tool-icon icon-green" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-        <line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/>
-      </svg>
+  <div class="modal-row">
+    <label>Спосіб виявлення</label>
+    <div class="pvs-radio-group">
+      <label class="pvs-radio-chip"><input type="radio" name="pvsDet" value="Візуально" checked> Візуально</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsDet" value="Акустично"> Акустично</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsDet" value="Акуст+Віз"> Акуст+Віз</label>
     </div>
   </div>
 
-  <div class="tools-trash-wrapper">
-    <div id="activeCounter" class="badge-counter">0</div>
-    <div class="tools-block trash-btn" title="Очистити карту" onclick="clearAll()">
-      <svg class="tool-icon" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
-        <path d="M 4 6 L 20 6 M 9 6 V 4 H 15 V 6 M 6 6 L 7 20 A 1 1 0 0 0 8 21 H 16 A 1 1 0 0 0 17 20 L 18 6"/>
-      </svg>
-    </div>
+  <div class="modal-row">
+    <label>Курс цілі (0–360°)</label>
+    <input type="number" id="pvsCourse" value="180" min="0" max="360">
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn-v btn-v-secondary" onclick="closeModal('pvsModal')">Скасувати</button>
+    <button class="btn-v btn-v-primary" onclick="submitPvsReport()">Доповісти</button>
+  </div>
+</div>
+
+<!-- МОДАЛЬНЕ ВІКНО: НАЛАШТУВАННЯ (РИС. 5.2) -->
+<div id="settingsModal" class="virazh-modal">
+  <div class="modal-head">
+    <h3>Головне меню «Налаштування»</h3>
+    <span class="modal-close" onclick="closeModal('settingsModal')">✕</span>
+  </div>
+  <div class="modal-row">
+    <label>Швидкість тактичної симуляції</label>
+    <select id="simSpeedSelect" onchange="changeSimSpeed(this.value)">
+      <option value="1">1x (Реальний час)</option>
+      <option value="4" selected>4x (Тактичний розрахунок)</option>
+      <option value="10">10x (Прискорений тренінг)</option>
+    </select>
+  </div>
+  <div class="modal-row">
+    <label>Смуга статусу затримки (п. 7.1)</label>
+    <select id="statusDisplaySelect">
+      <option value="on">Відображати 3 сегменти часу зникнення</option>
+      <option value="off">Приховати смугу статусу</option>
+    </select>
+  </div>
+  <div style="font-size: 11px; color: #727f91; margin: 8px 0; border-top: 1px solid #e1e5eb; padding-top: 8px;">
+    Версія: 1701 (1.7.2-pre-release) SHA: 5c932183<br>
+    Статична IP: 10.18.85.226 [HEX: 0a1255e2]
+  </div>
+  <div class="modal-actions">
+    <button class="btn-v btn-v-primary" onclick="closeModal('settingsModal')">Закрити</button>
+  </div>
+</div>
+
+<!-- ПРАВА ПАНЕЛЬ ІНСТРУМЕНТІВ (РИС. 5.1 / 14.1) -->
+<div class="right-toolbar">
+  <div class="tool-btn" id="btnSim" title="Симуляція руху (Play/Pause)" onclick="toggleSimulation()">
+    <svg id="simIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+  </div>
+
+  <div class="tool-btn" id="btnToggleLabels" title="Показати/приховати формуляри на карті" onclick="toggleTargetLabels()">
+    <svg viewBox="0 0 24 24"><path d="M4 7V4h16v3"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg>
+  </div>
+
+  <div class="tool-btn" title="Темний радар-режим (п. 11.4)" onclick="toggleRadar()">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M 8 8 A 5 5 0 0 0 8 16 M 16 8 A 5 5 0 0 1 16 16 M 5 5 A 10 10 0 0 0 5 19 M 19 5 A 10 10 0 0 1 19 19"/></svg>
+  </div>
+
+  <div class="tool-btn" title="Пошук населеного пункту (п. 9.3)" onclick="searchLocality()">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+  </div>
+
+  <div class="tool-btn" id="btnRadioAudio" title="Звукові повідомлення КХ/УКХ (п. 6.2)" onclick="toggleRadioAudio()">
+    <svg viewBox="0 0 24 24"><path d="M4.9 19.1C2.5 16.7 2.5 12.8 4.9 10.4M19.1 19.1c2.4-2.4 2.4-6.3 0-8.7M7.8 16.2c-1.2-1.2-1.2-3.1 0-4.3M16.2 16.2c1.2-1.2 1.2-3.1 0-4.3"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg>
+  </div>
+
+  <div class="tool-btn" title="Охопити всі цілі" onclick="fitAllTargets()">
+    <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="15" y2="15"/><polyline points="15,9 15,15 9,15"/><line x1="19" y1="4" x2="19" y2="20"/></svg>
+  </div>
+
+  <div class="tool-btn" title="Повноекранний режим (п. 9.2)" onclick="toggleFullscreen()">
+    <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg>
+  </div>
+
+  <div class="tool-btn" title="ПВС: Доповідь про виявлену ціль (п. 14)" onclick="openPvsModal()">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+  </div>
+
+  <div class="tool-btn btn-active" title="Ввести ціль (Клік 1 — точка, Клік 2 — вектор)" onclick="openAddModal()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+  </div>
+
+  <div class="tool-btn" title="Очистити неактивні сліди" onclick="clearGhosts()">
+    <svg viewBox="0 0 24 24" style="color: #ff3b30;"><path d="M 12 4 A 8 8 0 1 1 4 12" stroke-dasharray="3 3"/><polyline points="12,1 12,4 15,4"/></svg>
+  </div>
+
+  <div class="tool-btn" id="btnDeleteMode" title="Очистити всю оперативну обстановку" onclick="clearAll()">
+    <svg viewBox="0 0 24 24"><path d="M 4 6 L 20 6 M 9 6 V 4 H 15 V 6 M 6 6 L 7 20 A 1 1 0 0 0 8 21 H 16 A 1 1 0 0 0 17 20 L 18 6"/></svg>
+  </div>
+
+  <!-- Кругла кнопка підключення та кількості цілей (п. 5.1) -->
+  <div class="status-conn-btn" id="activeCounter" title="Стан з'єднання / Меню налаштувань" onclick="openSettingsModal()">
+    0
   </div>
 </div>
 
@@ -395,11 +512,55 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.5, 36.0], 6);
+  /* ================= ІНІЦІАЛІЗАЦІЯ КАРТИ ТА ВОДЯНОГО ЗНАКУ ================= */
+  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.6, 36.2], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
-  let targets = [];
+  // Водяний знак з IP 10.18.85.226 -> шістнадцятковий 0a1255e2 (п. 5.3)
+  const watermarkHex = "0a1255e2";
+  const wmLayer = document.getElementById('watermarkLayer');
+  for (let i = 0; i < 42; i++) {
+    const node = document.createElement('div');
+    node.className = 'watermark-node';
+    node.textContent = watermarkHex;
+    wmLayer.appendChild(node);
+  }
+
+  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ТА ШАРІВ ================= */
+  let targets = [
+    {
+      id: '9743', entryMode: 'р', aff: 'ПП', type: 'Supercam',
+      speed: 118, height: 3, heading: 292, targetHeading: 292,
+      lat: 50.15, lng: 35.80, source: 'РЛС', latency: 12,
+      segments: [[[49.90, 36.40], [50.05, 36.05], [50.15, 35.80]]],
+      active: true
+    },
+    {
+      id: '9526', entryMode: 'р', aff: 'ПП', type: 'Ударний дрон',
+      speed: 185, height: 4, heading: 246, targetHeading: 246,
+      lat: 49.32, lng: 36.65, source: 'РТВ', latency: 25,
+      segments: [[[49.65, 37.60], [49.45, 37.10], [49.32, 36.65]]],
+      active: true
+    },
+    {
+      id: '0706', entryMode: '', aff: 'ЗЛ', type: 'Су-35',
+      speed: 950, height: 85, heading: 144, targetHeading: 144,
+      lat: 49.70, lng: 35.10, source: 'РЛС', latency: 8,
+      segments: [[[49.95, 34.70], [49.70, 35.10]]],
+      active: true
+    },
+    {
+      id: '0037', entryMode: 'а', aff: 'ПП', type: 'ASTERIX',
+      speed: 53, height: 25, heading: 160, targetHeading: 160,
+      lat: 48.40, lng: 35.80, source: 'ASTERIX', latency: 14,
+      segments: [[[48.55, 35.75], [48.40, 35.80]]],
+      active: true
+    }
+  ];
+
   let layerObjects = {};
+  let selectedTargetId = null;
+  let extrapolationCircles = {};
 
   let pendingTarget = null;
   let reaimTargetId = null;
@@ -411,19 +572,29 @@
 
   let addType = 'Ударний дрон';
   let addId = '';
+  let addAffiliation = 'ПП';
+  let addHeight = 15;
+  let addSource = 'РЛС';
 
   let isSimulating = false;
   let simInterval = null;
+  let simMultiplier = 4;
   let tickCount = 0;
+  let isRadioAudioActive = false;
 
   const profileByType = {
-    'Ударний дрон': { speedMin: 150, speedMax: 185 },
-    'КАБ':          { speedMin: 700, speedMax: 900 },
-    'Су-34':        { speedMin: 850, speedMax: 1000 },
-    'Су-35':        { speedMin: 900, speedMax: 1050 },
-    'Баллістична ракета': { speedMin: 2000, speedMax: 2500 }
+    'Ударний дрон':      { speedMin: 150, speedMax: 185 },
+    'Supercam':          { speedMin: 100, speedMax: 130 },
+    'КАБ':               { speedMin: 700, speedMax: 900 },
+    'Крилата ракета':    { speedMin: 800, speedMax: 950 },
+    'Су-34':             { speedMin: 850, speedMax: 1000 },
+    'Су-35':             { speedMin: 900, speedMax: 1050 },
+    'Баллістична ракета':{ speedMin: 2000, speedMax: 2500 },
+    'ASTERIX':           { speedMin: 50, speedMax: 120 },
+    'РЛС':               { speedMin: 300, speedMax: 600 }
   };
 
+  /* ================= ГОДИННИК ================= */
   function updateClock() {
     const now = new Date();
     const clockEl = document.getElementById('clock');
@@ -445,7 +616,7 @@
     const panel = document.getElementById('mainTopPanel');
     panel.classList.toggle('collapsed');
     const toggleText = panel.querySelector('.panel-toggle');
-    toggleText.innerText = panel.classList.contains('collapsed') ? "▲ РОЗГОРНУТИ" : "▼ ЗГОРНУТИ";
+    toggleText.innerText = panel.classList.contains('collapsed') ? "▲ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (РОЗГОРНУТИ)" : "▼ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (ЗГОРНУТИ)";
   };
 
   window.toggleSimulation = () => {
@@ -454,16 +625,17 @@
     const simIcon = document.getElementById('simIcon');
     
     if (isSimulating) {
-      simIcon.style.stroke = "#34c759";
-      simIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`;
+      btnSim.classList.add('btn-active');
+      simIcon.innerHTML = `<rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/>`;
       simInterval = setInterval(simulationTick, 1000);
     } else {
-      simIcon.style.stroke = "";
-      simIcon.innerHTML = `<polygon points="5,3 19,12 5,21"/>`;
+      btnSim.classList.remove('btn-active');
+      simIcon.innerHTML = `<polygon points="5,3 19,12 5,21" fill="currentColor"/>`;
       clearInterval(simInterval);
     }
   };
 
+  /* ================= СИМУЛЯЦІЯ РУХУ (ЗБЕРЕЖЕНО ПОВНИЙ АЛГОРИТМ) ================= */
   function simulationTick() {
     tickCount++;
     targets.forEach(t => {
@@ -475,15 +647,22 @@
         t.heading = lerpHeading(t.heading, t.targetHeading, 4);
       }
 
-      const distanceKm = (t.speed / 3600); 
+      // Розрахунок дистанції польоту
+      const distanceKm = (t.speed / 3600) * (simMultiplier * 0.4); 
       const newCoords = getDestination(t.lat, t.lng, t.heading, distanceKm);
       t.lat = newCoords[0];
       t.lng = newCoords[1];
 
       const currentSegment = t.segments[t.segments.length - 1];
-      // Під час віражу записуємо точки частіше для ідеальної дуги
       if (isTurning || tickCount % 3 === 0) {
         currentSegment.push([t.lat, t.lng]);
+        if (currentSegment.length > 60) currentSegment.shift();
+      }
+
+      // Оновлення екстраполяційного кола, якщо активне
+      if (extrapolationCircles[t.id]) {
+        const curR = extrapolationCircles[t.id].getRadius();
+        extrapolationCircles[t.id].setRadius(curR + distanceKm * 1000 * 0.15);
       }
 
       if (layerObjects[t.id]) {
@@ -505,6 +684,10 @@
         }
       }
     });
+
+    if (selectedTargetId) {
+      updateTopBar(selectedTargetId);
+    }
   }
 
   function randomSpeedFor(type) {
@@ -516,14 +699,77 @@
   let tempPreviewMarker = null;
   let tempGuideLine = null;
 
-  const icons = {
-    'Ударний дрон': `<path d="M 48,10 L 52,10 L 52,30 L 85,75 L 85,85 L 52,85 L 52,90 L 48,90 L 48,85 L 15,85 L 15,75 L 48,30 Z" fill="#e0405a"/>`,
-    'КАБ': `<path d="M 44,10 Q 50,0 56,10 L 56,40 L 90,45 L 90,50 L 56,50 L 56,80 L 66,90 L 66,95 L 56,90 L 56,100 L 44,100 L 44,90 L 34,95 L 34,90 L 44,80 L 44,50 L 10,50 L 10,45 L 44,40 Z" fill="#e0405a"/>`,
-    'Су-34': `<path d="M 47,5 Q 50,-1 53,5 L 54,20 L 62,23 L 62,27 L 55,31 L 60,45 L 95,70 L 95,75 L 62,70 L 62,83 L 72,93 L 72,97 L 55,90 L 53,103 L 47,103 L 45,90 L 28,97 L 28,93 L 38,83 L 38,70 L 5,75 L 5,70 L 40,45 L 45,31 L 38,27 L 38,23 L 46,20 Z" fill="#e0405a"/>`,
-    'Су-35': `<path d="M 49,0 Q 50,-5 51,0 L 53,25 L 60,45 L 95,70 L 95,75 L 60,70 L 60,85 L 72,95 L 72,99 L 56,93 L 56,103 L 44,103 L 44,93 L 28,99 L 28,95 L 40,85 L 40,70 L 5,75 L 5,70 L 40,45 L 47,25 Z" fill="#e0405a"/>`,
-    'Баллістична ракета': `<g fill="none" stroke="#e0405a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 50 8 L 55 15 L 55 32 L 50 38 L 45 32 L 45 15 Z" fill="#e0405a"/><rect x="46" y="32" width="8" height="28" rx="2"/><line x1="48" y1="36" x2="52" y2="36"/><line x1="48" y1="42" x2="52" y2="42"/><line x1="48" y1="48" x2="52" y2="48"/><line x1="48" y1="54" x2="52" y2="54"/><path d="M 44 58 L 38 65 L 38 72 M 56 58 L 62 65 L 62 72"/><path d="M 46 60 L 42 70 Q 42 75 45 77 M 54 60 L 58 70 Q 58 75 55 77"/></g>`,
-    '__default__': `<circle cx="50" cy="50" r="26" fill="#e0405a"/><path d="M50 18 L50 4 M50 82 L50 96" stroke="#e0405a" stroke-width="6"/>`
-  };
+  /* ================= ТАКТИЧНІ СИМВОЛИ (SVG ЗГІДНО З ДОКУМЕНТАЦІЄЮ) ================= */
+  function getTacticalSvg(t) {
+    const col = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#222222');
+
+    // 1. Акустичний сенсор (еРакета / Звук - символ колеса, п. 7.1)
+    if (t.source === 'еРакета' || t.source === 'Звук') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="${col}" stroke-width="8"/>
+          <line x1="50" y1="12" x2="50" y2="88" stroke="${col}" stroke-width="6"/>
+          <line x1="12" y1="50" x2="88" y2="50" stroke="${col}" stroke-width="6"/>
+          <line x1="23" y1="23" x2="77" y2="77" stroke="${col}" stroke-width="5"/>
+          <line x1="23" y1="77" x2="77" y2="23" stroke="${col}" stroke-width="5"/>
+        </svg>`;
+    }
+
+    // 2. Пост ПВС (чорне коло зі стрілкою всередині, п. 7.1)
+    if (t.source === 'ПВС' && (!t.type || t.type === 'ПВС')) {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#111" stroke-width="8"/>
+          <path d="M50 20 L50 80 M50 20 L35 40 M50 20 L65 40" stroke="#111" stroke-width="7" stroke-linecap="round"/>
+        </svg>`;
+    }
+
+    // 3. Відмітки ASTERIX (трикутник/стрілка, п. 7.2)
+    if (t.type === 'ASTERIX') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <polygon points="50,10 88,86 50,70 12,86" fill="${col}" stroke="#fff" stroke-width="3"/>
+        </svg>`;
+    }
+
+    // 4. Shahed-136 / Герань (дельта-крило, п. 7.1)
+    if (t.type === 'Ударний дрон' || t.type === 'Shahed-136') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M50,8 L88,82 L88,92 L50,76 L12,92 L12,82 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    // 5. Розвідувальний БпЛА (Supercam, Орлан, ZALA)
+    if (t.type === 'Supercam' || t.type === 'Орлан-10') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M48,12 L52,12 L52,42 L94,52 L94,58 L52,58 L52,86 L66,94 L66,98 L50,94 L34,98 L34,94 L48,86 L48,58 L6,58 L6,52 L48,42 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    // 6. Винищувачі Су-34 / Су-35
+    if (t.type === 'Су-34' || t.type === 'Су-35') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M50,4 L56,22 L64,26 L64,32 L56,34 L62,50 L96,72 L96,78 L62,72 L62,86 L74,96 L74,99 L50,92 L26,99 L26,96 L38,86 L38,72 L4,78 L4,72 L38,50 L44,34 L36,32 L36,26 L44,22 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    // 7. Ракети / КАБ
+    if (t.type === 'Баллістична ракета' || t.type === 'Крилата ракета' || t.type === 'КАБ') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M50,5 L58,22 L58,68 L70,88 L58,84 L58,95 L42,95 L42,84 L30,88 L42,68 L42,22 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    // За замовчуванням (РЛС літачок, п. 7.1)
+    return `
+      <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+        <path d="M50,6 L57,26 L94,62 L94,70 L56,60 L56,84 L68,93 L68,98 L50,93 L32,98 L32,93 L44,84 L44,60 L6,70 L6,62 L43,26 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+      </svg>`;
+  }
 
   function lerpHeading(current, target, step = 8) {
     let diff = target - current;
@@ -533,11 +779,10 @@
     return (current + Math.sign(diff) * step + 360) % 360;
   }
 
-  // Високоточне заокруглення кутів кривими Безьє
+  /* ================= ЗГЛАДЖУВАННЯ ТРАЄКТОРІЙ КРИВИМИ БЕЗЬЄ ================= */
   function smoothSegment(points, steps = 10) {
     if (!points || points.length <= 2) return points || [];
     
-    // Фільтрація надлишкових точок, що збігаються
     const clean = [points[0]];
     for (let i = 1; i < points.length; i++) {
       const dLat = Math.abs(points[i][0] - clean[clean.length - 1][0]);
@@ -561,13 +806,11 @@
 
       if (d1 < 1e-6 || d2 < 1e-6) continue;
 
-      // Радіус заокруглення адаптивно до довжини сусідніх відрізків
       const r = Math.min(d1 * 0.45, d2 * 0.45);
       const start = [p1[0] + (v1[0] / d1) * r, p1[1] + (v1[1] / d1) * r];
       const end = [p1[0] + (v2[0] / d2) * r, p1[1] + (v2[1] / d2) * r];
 
       result.push(start);
-      // Генерація гладкої тангенціальної дуги
       for (let s = 1; s < steps; s++) {
         const t = s / steps;
         const inv = 1 - t;
@@ -599,23 +842,58 @@
     return [(lat2 * 180 / Math.PI), (lon2 * 180 / Math.PI)];
   }
 
+  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ (П. 7.1) ================= */
   function createTargetIcon(t) {
-    const svgPath = icons[t.type] || icons['__default__'];
-    const scale = t.type === 'Баллістична ракета' ? ' scale(1.4)' : '';
-    const html = `
-      <div class="target-container">
-        <svg class="target-icon" style="transform: rotate(${t.heading}deg)${scale};" viewBox="0 0 100 100">${svgPath}</svg>
-        <div class="target-info">
-          <div>${t.type}</div>
-          <div>${t.id} ПП</div>
-          <div class="course-wrapper">
-            <svg width="22" height="6" viewBox="0 0 22 6"><line x1="0" y1="3" x2="22" y2="3" stroke="#34c759" stroke-width="2" stroke-dasharray="6,4" /></svg>
-            <span>${Math.round(t.heading)}°</span>
-          </div>
-        </div>
+    const isSelected = selectedTargetId === t.id;
+    const isHighSpeed = t.speed > 1200;
+    const affClass = t.aff === 'ПП' ? 'formular-pp' : (t.aff === 'ЗЛ' ? 'formular-zl' : 'formular-nv');
+
+    // Смуга статусу зникнення з 3 сегментів (п. 7.1)
+    let segClass = "status-segment";
+    if (t.latency > 90) segClass += " lost";
+    else if (t.latency > 30) segClass += " warn";
+
+    const statusBarHtml = `
+      <div class="status-bar-box">
+        <div class="${segClass}"></div>
+        <div class="${segClass}"></div>
+        <div class="${t.latency > 60 ? 'status-segment dim' : segClass}"></div>
       </div>
     `;
-    return L.divIcon({ html: html, className: '', iconSize: [140, 50], iconAnchor: [14, 16] });
+
+    // Формуляр цілі (п. 7.1, 7.2)
+    let formularContent = '';
+    if (isSelected) {
+      // Повний формуляр
+      formularContent = `
+        <div class="virazh-formular ${affClass}">
+          ${t.type ? `<div class="formular-type">${t.type}</div>` : ''}
+          <div>${t.id}${t.entryMode || ''} ${t.aff}</div>
+          <div>${Math.round(t.speed)} ${t.height}</div>
+          <div>${Math.round(t.heading)}°</div>
+        </div>
+      `;
+    } else {
+      // Скорочений формуляр
+      formularContent = `
+        <div class="virazh-formular ${affClass}">
+          <div>${t.id}${t.entryMode || ''} ${t.aff}.</div>
+        </div>
+      `;
+    }
+
+    const html = `
+      <div class="virazh-marker-wrap">
+        ${isHighSpeed ? '<div class="speed-circle"></div>' : ''}
+        ${isSelected ? '<div class="selected-circle"></div>' : ''}
+        <div class="virazh-symbol-box" style="transform: rotate(${t.heading}deg);">
+          ${getTacticalSvg(t)}
+        </div>
+        ${statusBarHtml}
+        ${formularContent}
+      </div>
+    `;
+    return L.divIcon({ html: html, className: '', iconSize: [34, 34], iconAnchor: [17, 17] });
   }
 
   function showHint(text) {
@@ -624,6 +902,7 @@
   }
   function hideHint() { document.getElementById('hudHint').style.display = 'none'; }
 
+  /* ================= ГОЛОВНИЙ РЕНДЕР ================= */
   function render() {
     const tbody = document.getElementById('targetsTableBody');
     tbody.innerHTML = '';
@@ -642,11 +921,14 @@
     targets.forEach((t) => {
       layerObjects[t.id] = {};
 
+      const trackColor = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#555555');
+
       if (t.active) {
         activeCount++;
+        // Лінія пролонгації з точками на 5, 10, 15 хв (п. 7.1)
         const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
         layerObjects[t.id].ray = L.polyline([[t.lat, t.lng], rayEnd], { 
-          color: '#555', weight: 1.5, opacity: 0.8, className: 'vector-ray' 
+          color: '#555e6d', weight: 1.5, opacity: 0.7, className: 'vector-ray' 
         }).addTo(map);
 
         if (t.segments && t.segments.length > 0) {
@@ -655,38 +937,36 @@
           if (lastSeg.length === 0 || lastSeg[lastSeg.length - 1][0] !== t.lat) {
             lastSeg.push([t.lat, t.lng]);
           }
-          // smoothFactor: 0 зберігає всі розраховані точки без огрублення
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
-            color: '#e0405a', weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line'
+            color: trackColor, weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line'
           }).addTo(map);
         }
 
         layerObjects[t.id].marker = L.marker([t.lat, t.lng], { icon: createTargetIcon(t) }).addTo(map);
+        layerObjects[t.id].marker.on('click', () => selectTarget(t.id));
         layerObjects[t.id].marker.on('dblclick', () => archiveTarget(t.id));
 
         renderedRows++;
         const tr = document.createElement('tr');
+        const badgeClass = t.aff === 'ПП' ? 'badge-pp' : (t.aff === 'ЗЛ' ? 'badge-zl' : 'badge-nv');
+        tr.onclick = (e) => {
+          if (!e.target.closest('button')) selectTarget(t.id);
+        };
         tr.innerHTML = `
-          <td><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34c759;margin-right:5px; box-shadow: 0 0 4px #34c759;"></span>${t.id}</td>
-          <td class="muted">A0</td>
-          <td class="muted">D0</td>
-          <td>1</td>
+          <td><b>${t.id}${t.entryMode || ''}</b></td>
+          <td><span class="badge-aff ${badgeClass}">${t.aff}</span></td>
+          <td>${t.type || 'РЛС'}</td>
+          <td>H${t.height || 0} / ${Math.round(t.speed)}</td>
+          <td>${Math.round(t.heading)}°</td>
           <td class="td-actions">
-            <button class="btn-action btn-reaim" title="Змінити вектор" onclick="startReaim('${t.id}')">
-              <svg viewBox="0 0 24 24">
-                <g transform="rotate(-40 12 12)">
-                  <path class="plane-path" d="M2.5 21L23 12 2.5 3 2 10.5l14 1.5-14 1.5z"/>
-                  <circle class="blip-dot" cx="23" cy="12" r="2.6"/>
-                </g>
-              </svg>
+            <button class="btn-action btn-reaim" title="Змінити вектор (Reaim)" onclick="startReaim('${t.id}')">
+              <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
             </button>
             <button class="btn-action btn-focus" title="Фокус на цілі" onclick="focusTarget('${t.id}')">
-              <svg viewBox="0 0 24 24" stroke="none"><path d="M22 12.5l-7-2.2V5.8c0-.9-.9-1.6-2-1.6s-2 .7-2 1.6v4.5L4 12.5v2l7-1.3v5l-2.3 1.4v1.4l3.3-.8 3.3.8v-1.4L13 18.2v-5l7 1.3z"/></svg>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
             </button>
             <button class="btn-action btn-archive" title="До архіву (пропажа з радара)" onclick="archiveTarget('${t.id}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 8v13h16V8M3 3h18v5H3zM9 12h6"/>
-              </svg>
+              <svg viewBox="0 0 24 24"><path d="M4 8v13h16V8M3 3h18v5H3zM9 12h6"/></svg>
             </button>
           </td>
         `;
@@ -694,7 +974,7 @@
       } else {
         if (t.segments && t.segments.length > 0) {
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(t.segments), {
-            color: '#e02447', weight: 2.2, opacity: 0.85, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-lost'
+            color: '#8893a0', weight: 2.0, opacity: 0.8, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-lost'
           }).addTo(map);
         }
 
@@ -702,24 +982,20 @@
         const tr = document.createElement('tr');
         tr.className = 'row-lost';
         tr.innerHTML = `
-          <td><span class="status-lost-badge">АРХІВ</span>${t.id}</td>
-          <td class="muted">—</td>
-          <td class="muted">—</td>
-          <td>0</td>
+          <td><span class="status-lost-badge">АРХІВ</span>${t.id}${t.entryMode || ''}</td>
+          <td><span class="badge-aff badge-nv">${t.aff}</span></td>
+          <td>${t.type || 'РЛС'}</td>
+          <td>—</td>
+          <td>${Math.round(t.heading)}°</td>
           <td class="td-actions">
             <button class="btn-action btn-focus" title="Фокус на слід" onclick="focusTarget('${t.id}')">
-              <svg viewBox="0 0 24 24" stroke="none"><path d="M22 12.5l-7-2.2V5.8c0-.9-.9-1.6-2-1.6s-2 .7-2 1.6v4.5L4 12.5v2l7-1.3v5l-2.3 1.4v1.4l3.3-.8 3.3.8v-1.4L13 18.2v-5l7 1.3z"/></svg>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
             </button>
             <button class="btn-action btn-restore" title="Повернути з архіву (поставити на карту)" onclick="startRestoreTarget('${t.id}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m8 4-5 5 5 5M3 9h11a6 6 0 0 1 0 12"/>
-              </svg>
+              <svg viewBox="0 0 24 24"><path d="m8 4-5 5 5 5M3 9h11a6 6 0 0 1 0 12"/></svg>
             </button>
             <button class="btn-action btn-delete" title="Повністю видалити" onclick="deleteTarget('${t.id}')">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 7h14"/><path d="M9 7V4.5h6V7"/><path d="M7 7l1 13a1 1 0 0 0 1 .9h6a1 1 0 0 0 1-.9l1-13"/>
-                <path d="M10 10.5v7"/><path d="M14 10.5v7"/>
-              </svg>
+              <svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13a1 1 0 0 0 1 .9h6a1 1 0 0 0 1-.9l1-13"/></svg>
             </button>
           </td>
         `;
@@ -729,42 +1005,142 @@
 
     if (renderedRows === 0) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="5" class="row-empty">ПОВІТРЯНА ОБСТАНОВКА ЧИСТА</td>`;
+      tr.innerHTML = `<td colspan="6" class="row-empty">ПОВІТРЯНА ОБСТАНОВКА ЧИСТА</td>`;
       tbody.appendChild(tr);
     }
 
     document.getElementById('activeCounter').innerText = activeCount;
+    if (selectedTargetId) updateTopBar(selectedTargetId);
   }
 
+  /* ================= 7.3 ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ ================= */
+  window.selectTarget = (id) => {
+    selectedTargetId = id;
+    const bar = document.getElementById('targetTopBar');
+    bar.style.display = 'flex';
+    updateTopBar(id);
+    render();
+  };
+
+  window.deselectTarget = () => {
+    selectedTargetId = null;
+    document.getElementById('targetTopBar').style.display = 'none';
+    render();
+  };
+
+  function updateTopBar(id) {
+    const t = targets.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('topBarId').innerText = `${t.id}${t.entryMode || 'р'}`;
+    document.getElementById('topBarAzimuth').innerText = `A${Math.round((t.heading + 180) % 360)}`;
+    document.getElementById('topBarDistance').innerText = `D${Math.round(t.speed * 0.08)}`;
+    document.getElementById('topBarHeight').innerText = `H${t.height}.0`;
+    document.getElementById('topBarSpeed').innerText = `V${Math.round(t.speed)}`;
+    document.getElementById('topBarQty').innerText = `1`;
+
+    const now = new Date();
+    document.getElementById('topBarEta').innerText = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} (0)`;
+  }
+
+  window.reaimCurrentTarget = () => {
+    if (selectedTargetId) startReaim(selectedTargetId);
+  };
+
+  window.toggleCurrentExtrapolation = () => {
+    if (!selectedTargetId) return;
+    const t = targets.find(x => x.id === selectedTargetId);
+    if (!t) return;
+
+    if (extrapolationCircles[t.id]) {
+      map.removeLayer(extrapolationCircles[t.id]);
+      delete extrapolationCircles[t.id];
+      document.getElementById('btnExtrapolateTop').classList.remove('active');
+      showHint(`Екстраполяцію для ${t.id} вимкнено`);
+    } else {
+      // Екстраполяційне коло сірого кольору зі штриховою лінією (п. 7.3)
+      const c = L.circle([t.lat, t.lng], {
+        radius: 12000, color: '#8893a0', dashArray: '5, 5', weight: 1.8, fillOpacity: 0.06
+      }).addTo(map);
+      extrapolationCircles[t.id] = c;
+      document.getElementById('btnExtrapolateTop').classList.add('active');
+      showHint(`Увімкнено екстраполяційне коло для цілі ${t.id}`);
+    }
+  };
+
+  /* ================= КЕРУВАННЯ МОДАЛЬНИМИ ВІКНАМИ ================= */
   window.openAddModal = () => {
     document.getElementById('modalId').value = '';
     document.getElementById('targetModal').style.display = 'flex';
   };
-  window.closeModal = () => { document.getElementById('targetModal').style.display = 'none'; };
+  window.openPvsModal = () => { document.getElementById('pvsModal').style.display = 'flex'; };
+  window.openSettingsModal = () => { document.getElementById('settingsModal').style.display = 'flex'; };
+  window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
 
   window.confirmAddTarget = () => {
     addType = document.getElementById('modalType').value;
+    addAffiliation = document.getElementById('modalAffiliation').value;
+    addHeight = parseFloat(document.getElementById('modalHeight').value) || 12;
+    addSource = document.getElementById('modalSource').value;
     const addSpeed = randomSpeedFor(addType); 
     addId = document.getElementById('modalId').value.trim();
-    closeModal();
+    closeModal('targetModal');
     isAddingMode = true;
-    showHint(addId ? `КЛІК 1: Вкажіть точку виявлення борта ${addId}` : 'КЛІК 1: Вкажіть точку виявлення на карті');
+    showHint(addId ? `КЛІК 1: Вкажіть точку виявлення борта ${addId}` : 'КЛІК 1: Вкажіть точку виявлення цілі на карті');
     window.tempAddSpeed = addSpeed;
+  };
+
+  /* Доповідь ПВС (Розділ 14) */
+  window.submitPvsReport = () => {
+    closeModal('pvsModal');
+    const type = document.querySelector('input[name="pvsType"]:checked').value;
+    const course = parseFloat(document.getElementById('pvsCourse').value) || 180;
+    const center = map.getCenter();
+    const newId = Math.floor(2000 + Math.random() * 7000).toString();
+
+    targets.push({
+      id: newId, entryMode: 'р', aff: 'ПП', type: type,
+      speed: 155, height: 4, heading: course, targetHeading: course,
+      source: 'ПВС', active: true, latency: 4,
+      lat: center.lat, lng: center.lng,
+      segments: [[[center.lat, center.lng]]]
+    });
+    showHint(`Прийнято доповідь ПВС: ${type}, курс ${course}°`);
+    render();
   };
 
   window.clearGhosts = () => { targets = targets.filter(t => t.active); render(); };
 
-  window.searchTarget = () => {
-    let id = prompt("Введіть ID цілі для пошуку:");
-    if(!id) return;
-    let t = targets.find(x => x.id === id);
-    if(t) {
-      const lastSeg = t.segments[t.segments.length - 1];
-      const p = t.active ? [t.lat, t.lng] : lastSeg[lastSeg.length - 1];
-      map.setView(p, 11);
-    } else {
-      alert("Ціль з таким ID не знайдено.");
+  window.searchLocality = () => {
+    let q = prompt("Пошук населеного пункту на ОМ (п. 9.3):");
+    if (!q) return;
+    q = q.toLowerCase();
+    if (q.includes("харк")) map.setView([49.99, 36.23], 10);
+    else if (q.includes("київ")) map.setView([50.45, 30.52], 10);
+    else if (q.includes("дніпр")) map.setView([48.46, 35.04], 10);
+    else if (q.includes("полтав")) map.setView([49.58, 34.55], 10);
+    else if (q.includes("сум")) map.setView([50.90, 34.79], 10);
+    else {
+      let t = targets.find(x => x.id === q);
+      if (t) focusTarget(t.id);
+      else showHint(`Населений пункт або об'єкт «${q}» позначено`);
     }
+  };
+
+  window.toggleRadioAudio = () => {
+    isRadioAudioActive = !isRadioAudioActive;
+    const btn = document.getElementById('btnRadioAudio');
+    if (isRadioAudioActive) {
+      btn.classList.add('btn-active');
+      showHint("Режим звукових повідомлень (КХ/УКХ) УВІМКНЕНО");
+    } else {
+      btn.classList.remove('btn-active');
+      showHint("Режим звукових повідомлень ВИМКНЕНО");
+    }
+  };
+
+  window.changeSimSpeed = (val) => {
+    simMultiplier = parseFloat(val) || 4;
+    showHint(`Швидкість розрахунку: ${simMultiplier}x`);
   };
 
   window.toggleRadar = () => {
@@ -788,7 +1164,11 @@
   };
 
   window.clearAll = () => {
-    if(confirm("Увага! Очистити всю оперативну обстановку?")) { targets = []; render(); }
+    if(confirm("Увага! Очистити всю оперативну повітряну обстановку?")) { 
+      targets = []; 
+      deselectTarget();
+      render(); 
+    }
   };
 
   window.startReaim = (id) => {
@@ -801,7 +1181,8 @@
     if (t) {
       const lastSeg = t.segments[t.segments.length - 1];
       const p = t.active ? [t.lat, t.lng] : (lastSeg && lastSeg.length ? lastSeg[lastSeg.length - 1] : [t.lat, t.lng]);
-      map.setView(p, 10); 
+      map.setView(p, 10);
+      selectTarget(id);
     }
   };
 
@@ -813,6 +1194,7 @@
         currentSeg.push([t.lat, t.lng]);
       }
       t.active = false; 
+      if (selectedTargetId === id) deselectTarget();
       render(); 
     } 
   };
@@ -823,8 +1205,13 @@
     showHint(`КЛІК 1: Вкажіть нове положення борта ${id} на карті`);
   };
 
-  window.deleteTarget = (id) => { targets = targets.filter(x => x.id !== id); render(); };
+  window.deleteTarget = (id) => { 
+    targets = targets.filter(x => x.id !== id); 
+    if (selectedTargetId === id) deselectTarget();
+    render(); 
+  };
 
+  /* ================= КАРТОГРАФІЧНІ ОБРОБНИКИ КЛІКІВ ТА ПЕРЕМІЩЕНЬ ================= */
   map.on('click', function(e) {
     if (restoringTargetId) {
       const t = targets.find(x => x.id === restoringTargetId);
@@ -883,10 +1270,12 @@
       if (!pendingTarget) {
         const newId = addId || Math.floor(1000 + Math.random() * 9000).toString();
         pendingTarget = {
-          id: newId, type: addType, sub: 'ПП', speed: window.tempAddSpeed, heading: 0, targetHeading: 0,
+          id: newId, entryMode: 'р', aff: addAffiliation, type: addType,
+          speed: window.tempAddSpeed, height: addHeight, source: addSource,
+          heading: 0, targetHeading: 0,
           lat: e.latlng.lat, lng: e.latlng.lng, 
           segments: [ [[e.latlng.lat, e.latlng.lng]] ],
-          active: true
+          active: true, latency: 6
         };
         tempPreviewMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon: createTargetIcon(pendingTarget) }).addTo(map);
         showHint('КЛІК 2: Вкажіть вектор польоту');
@@ -904,6 +1293,7 @@
             existingTarget.heading = pendingTarget.heading;
             existingTarget.speed = pendingTarget.speed;
             existingTarget.type = pendingTarget.type;
+            existingTarget.aff = pendingTarget.aff;
             existingTarget.segments.push([
               [pendingTarget.segments[0][0][0], pendingTarget.segments[0][0][1]],
               [pendingTarget.lat, pendingTarget.lng]
@@ -931,7 +1321,7 @@
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([restoreStartPos, [e.latlng.lat, e.latlng.lng]], {
-        color: '#e0405a', weight: 1.8, opacity: 0.8
+        color: '#d91b2b', weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(targetH)}° (Клікніть для підтвердження)`);
       return;
@@ -945,7 +1335,7 @@
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([pendingTarget.segments[0][0], [e.latlng.lat, e.latlng.lng]], {
-        color: '#e0405a', weight: 1.8, opacity: 0.8
+        color: '#d91b2b', weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(pendingTarget.heading)}° (Клікніть для фіксації)`);
     }
@@ -963,12 +1353,13 @@
         }
         if (tempGuideLine) map.removeLayer(tempGuideLine);
         tempGuideLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {
-          color: '#e0405a', weight: 1.8, opacity: 0.8
+          color: '#d91b2b', weight: 1.8, opacity: 0.8
         }).addTo(map);
       }
     }
   });
 
+  // Первинний запуск
   render();
 </script>
 </body>
