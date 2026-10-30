@@ -32,6 +32,10 @@
     #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; background: #cdd4dc; }
     .leaflet-control-attribution { display: none !important; }
 
+    /* Режим прицілювання: елементи карти не блокують перший клік */
+    body.aiming-mode #map, body.aiming-mode { cursor: crosshair !important; }
+    body.aiming-mode .leaflet-interactive { pointer-events: none !important; }
+
     /* ================= 5.3 ВОДЯНИЙ ЗНАК (HEX IP) ================= */
     .watermark-overlay {
       position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -337,14 +341,14 @@
 
 <!-- 7.3 ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ (РИС. 7.3) -->
 <div id="targetTopBar" class="target-top-bar">
-  <div class="top-bar-cell" id="topBarId">9743р</div>
+  <div class="top-bar-cell" id="topBarId">---</div>
   <div class="top-bar-cell" id="topBarAzimuth">A0</div>
   <div class="top-bar-cell" id="topBarDistance">D0</div>
-  <div class="top-bar-cell" id="topBarHeight">H33.0</div>
-  <div class="top-bar-cell" id="topBarSpeed">V88</div>
+  <div class="top-bar-cell" id="topBarHeight">H0.0</div>
+  <div class="top-bar-cell" id="topBarSpeed">V0</div>
   <div class="top-bar-cell" id="topBarQty">1</div>
-  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;">20:00 (0)</div>
-  <button class="top-bar-btn" title="Змінити вектор польоту (Reaim)" onclick="reaimCurrentTarget()">
+  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;">00:00 (0)</div>
+  <button class="top-bar-btn" title="Змінити вектор польоту (Reaim) — 1 клік" onclick="reaimCurrentTarget()">
     <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
   </button>
   <button class="top-bar-btn" id="btnExtrapolateTop" title="Екстраполяція положення (коло)" onclick="toggleCurrentExtrapolation()">
@@ -550,7 +554,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   /* ================= ІНІЦІАЛІЗАЦІЯ КАРТИ ТА ВОДЯНОГО ЗНАКУ ================= */
-  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([48.6, 36.2], 7);
+  const map = L.map('map', { 
+    zoomControl: false, 
+    attributionControl: false,
+    doubleClickZoom: false // Вимикаємо авто-зум по подвійному кліку
+  }).setView([48.6, 36.2], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
   // Водяний знак з IP 10.18.85.226 -> шістнадцятковий 0a1255e2 (п. 5.3)
@@ -563,7 +571,7 @@
     wmLayer.appendChild(node);
   }
 
-  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ТА ШАРІВ (ПОРОЖНІЙ ПРИ ЗАПУСКУ) ================= */
+  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ (ПОРОЖНІЙ ПРИ СТАРТІ) ================= */
   let targets = [];
 
   let layerObjects = {};
@@ -649,13 +657,11 @@
     targets.forEach(t => {
       if (!t.active) return;
 
-      // Плавний доворот курсу в польоті
       const isTurning = (t.targetHeading !== undefined && t.heading !== t.targetHeading);
       if (isTurning) {
         t.heading = lerpHeading(t.heading, t.targetHeading, 4);
       }
 
-      // Розрахунок дистанції польоту
       const distanceKm = (t.speed / 3600) * (simMultiplier * 0.4); 
       const newCoords = getDestination(t.lat, t.lng, t.heading, distanceKm);
       t.lat = newCoords[0];
@@ -667,7 +673,6 @@
         if (currentSegment.length > 60) currentSegment.shift();
       }
 
-      // Оновлення екстраполяційного кола, якщо активне
       if (extrapolationCircles[t.id]) {
         const curR = extrapolationCircles[t.id].getRadius();
         extrapolationCircles[t.id].setRadius(curR + distanceKm * 1000 * 0.15);
@@ -711,7 +716,6 @@
   function getTacticalSvg(t) {
     const col = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#222222');
 
-    // 1. Акустичний сенсор (еРакета / Звук - символ колеса, п. 7.1)
     if (t.source === 'еРакета' || t.source === 'Звук') {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -723,7 +727,6 @@
         </svg>`;
     }
 
-    // 2. Пост ПВС (чорне коло зі стрілкою всередині, п. 7.1)
     if (t.source === 'ПВС' && (!t.type || t.type === 'ПВС')) {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -732,7 +735,6 @@
         </svg>`;
     }
 
-    // 3. Відмітки ASTERIX (трикутник/стрілка, п. 7.2)
     if (t.type === 'ASTERIX') {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -740,7 +742,6 @@
         </svg>`;
     }
 
-    // 4. Shahed-136 / Герань (дельта-крило, п. 7.1)
     if (t.type === 'Ударний дрон' || t.type === 'Shahed-136') {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -748,7 +749,6 @@
         </svg>`;
     }
 
-    // 5. Розвідувальний БпЛА (Supercam, Орлан, ZALA)
     if (t.type === 'Supercam' || t.type === 'Орлан-10') {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -756,7 +756,6 @@
         </svg>`;
     }
 
-    // 6. Винищувачі Су-34 / Су-35
     if (t.type === 'Су-34' || t.type === 'Су-35') {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -764,7 +763,6 @@
         </svg>`;
     }
 
-    // 7. Ракети / КАБ
     if (t.type === 'Баллістична ракета' || t.type === 'Крилата ракета' || t.type === 'КАБ') {
       return `
         <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
@@ -772,7 +770,6 @@
         </svg>`;
     }
 
-    // За замовчуванням (РЛС літачок, п. 7.1)
     return `
       <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
         <path d="M50,6 L57,26 L94,62 L94,70 L56,60 L56,84 L68,93 L68,98 L50,93 L32,98 L32,93 L44,84 L44,60 L6,70 L6,62 L43,26 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
@@ -787,7 +784,6 @@
     return (current + Math.sign(diff) * step + 360) % 360;
   }
 
-  /* ================= ЗГЛАДЖУВАННЯ ТРАЄКТОРІЙ КРИВИМИ БЕЗЬЄ ================= */
   function smoothSegment(points, steps = 10) {
     if (!points || points.length <= 2) return points || [];
     
@@ -850,13 +846,12 @@
     return [(lat2 * 180 / Math.PI), (lon2 * 180 / Math.PI)];
   }
 
-  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ (П. 7.1) ================= */
+  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ ================= */
   function createTargetIcon(t) {
     const isSelected = selectedTargetId === t.id;
     const isHighSpeed = t.speed > 1200;
     const affClass = t.aff === 'ПП' ? 'formular-pp' : (t.aff === 'ЗЛ' ? 'formular-zl' : 'formular-nv');
 
-    // Смуга статусу зникнення з 3 сегментів (п. 7.1)
     let segClass = "status-segment";
     if (t.latency > 90) segClass += " lost";
     else if (t.latency > 30) segClass += " warn";
@@ -869,10 +864,8 @@
       </div>
     `;
 
-    // Формуляр цілі (п. 7.1, 7.2)
     let formularContent = '';
     if (isSelected) {
-      // Повний формуляр
       formularContent = `
         <div class="virazh-formular ${affClass}">
           ${t.type ? `<div class="formular-type">${t.type}</div>` : ''}
@@ -882,7 +875,6 @@
         </div>
       `;
     } else {
-      // Скорочений формуляр
       formularContent = `
         <div class="virazh-formular ${affClass}">
           <div>${t.id}${t.entryMode || ''} ${t.aff}.</div>
@@ -928,15 +920,13 @@
 
     targets.forEach((t) => {
       layerObjects[t.id] = {};
-
       const trackColor = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#555555');
 
       if (t.active) {
         activeCount++;
-        // Лінія пролонгації з точками на 5, 10, 15 хв (п. 7.1)
         const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
         layerObjects[t.id].ray = L.polyline([[t.lat, t.lng], rayEnd], { 
-          color: '#555e6d', weight: 1.5, opacity: 0.7, className: 'vector-ray' 
+          color: '#555e6d', weight: 1.5, opacity: 0.7, className: 'vector-ray', interactive: false
         }).addTo(map);
 
         if (t.segments && t.segments.length > 0) {
@@ -946,13 +936,16 @@
             lastSeg.push([t.lat, t.lng]);
           }
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
-            color: trackColor, weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line'
+            color: trackColor, weight: 2.2, opacity: 0.9, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-line', interactive: false
           }).addTo(map);
         }
 
         layerObjects[t.id].marker = L.marker([t.lat, t.lng], { icon: createTargetIcon(t) }).addTo(map);
-        layerObjects[t.id].marker.on('click', () => selectTarget(t.id));
-        layerObjects[t.id].marker.on('dblclick', () => archiveTarget(t.id));
+        layerObjects[t.id].marker.on('click', () => {
+          if (!reaimTargetId && !isAddingMode && !restoringTargetId) {
+            selectTarget(t.id);
+          }
+        });
 
         renderedRows++;
         const tr = document.createElement('tr');
@@ -967,7 +960,7 @@
           <td>H${t.height || 0} / ${Math.round(t.speed)}</td>
           <td>${Math.round(t.heading)}°</td>
           <td class="td-actions">
-            <button class="btn-action btn-reaim" title="Змінити вектор (Reaim)" onclick="startReaim('${t.id}')">
+            <button class="btn-action btn-reaim" title="Змінити вектор (Reaim) — 1 клік" onclick="startReaim('${t.id}')">
               <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
             </button>
             <button class="btn-action btn-focus" title="Фокус на цілі" onclick="focusTarget('${t.id}')">
@@ -982,7 +975,7 @@
       } else {
         if (t.segments && t.segments.length > 0) {
           layerObjects[t.id].trail = L.polyline(smoothMultiPath(t.segments), {
-            color: '#8893a0', weight: 2.0, opacity: 0.8, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-lost'
+            color: '#8893a0', weight: 2.0, opacity: 0.8, smoothFactor: 0, lineCap: 'round', lineJoin: 'round', className: 'trail-lost', interactive: false
           }).addTo(map);
         }
 
@@ -999,7 +992,7 @@
             <button class="btn-action btn-focus" title="Фокус на слід" onclick="focusTarget('${t.id}')">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
             </button>
-            <button class="btn-action btn-restore" title="Повернути з архіву (поставити на карту)" onclick="startRestoreTarget('${t.id}')">
+            <button class="btn-action btn-restore" title="Повернути з архіву" onclick="startRestoreTarget('${t.id}')">
               <svg viewBox="0 0 24 24"><path d="m8 4-5 5 5 5M3 9h11a6 6 0 0 1 0 12"/></svg>
             </button>
             <button class="btn-action btn-delete" title="Повністю видалити" onclick="deleteTarget('${t.id}')">
@@ -1066,7 +1059,7 @@
       showHint(`Екстраполяцію для ${t.id} вимкнено`);
     } else {
       const c = L.circle([t.lat, t.lng], {
-        radius: 12000, color: '#8893a0', dashArray: '5, 5', weight: 1.8, fillOpacity: 0.06
+        radius: 12000, color: '#8893a0', dashArray: '5, 5', weight: 1.8, fillOpacity: 0.06, interactive: false
       }).addTo(map);
       extrapolationCircles[t.id] = c;
       document.getElementById('btnExtrapolateTop').classList.add('active');
@@ -1092,11 +1085,11 @@
     addId = document.getElementById('modalId').value.trim();
     closeModal('targetModal');
     isAddingMode = true;
+    document.body.classList.add('aiming-mode');
     showHint(addId ? `КЛІК 1: Вкажіть точку виявлення борта ${addId}` : 'КЛІК 1: Вкажіть точку виявлення цілі на карті');
     window.tempAddSpeed = addSpeed;
   };
 
-  /* Доповідь ПВС (Розділ 14) */
   window.submitPvsReport = () => {
     closeModal('pvsModal');
     const type = document.querySelector('input[name="pvsType"]:checked').value;
@@ -1178,9 +1171,23 @@
     }
   };
 
+  /* ================= ФУНКЦІЯ ПЕРЕСТАНОВКИ ТА ЗМІНИ НАПРЯМКУ (REAIM) ================= */
+  function applyReaimToTarget(t, destinationLatLng) {
+    const currentSeg = t.segments[t.segments.length - 1];
+    const lastP = (currentSeg && currentSeg.length > 0) ? currentSeg[currentSeg.length - 1] : [t.lat, t.lng];
+    const targetH = calculateHeading(lastP, destinationLatLng);
+
+    currentSeg.push([destinationLatLng.lat, destinationLatLng.lng]);
+    t.lat = destinationLatLng.lat; 
+    t.lng = destinationLatLng.lng;
+    t.heading = targetH;
+    t.targetHeading = targetH;
+  }
+
   window.startReaim = (id) => {
     reaimTargetId = id;
-    showHint(`Вкажіть новий вектор курсу для борта ${id}`);
+    document.body.classList.add('aiming-mode');
+    showHint(`1 КЛІК: натисніть у точку, куди переставити борт ${id}`);
   };
 
   window.focusTarget = (id) => { 
@@ -1209,6 +1216,7 @@
   window.startRestoreTarget = (id) => {
     restoringTargetId = id;
     restoringStep = 1;
+    document.body.classList.add('aiming-mode');
     showHint(`КЛІК 1: Вкажіть нове положення борта ${id} на карті`);
   };
 
@@ -1218,16 +1226,53 @@
     render(); 
   };
 
-  /* ================= КАРТОГРАФІЧНІ ОБРОБНИКИ КЛІКІВ ТА ПЕРЕМІЩЕНЬ ================= */
+  /* ================= КАРТОГРАФІЧНІ ОБРОБНИКИ ================= */
+  
+  // Правий клік — миттєва перестановка/зміна курсу обраної цілі одним кліком
+  map.on('contextmenu', function(e) {
+    if (selectedTargetId) {
+      const t = targets.find(x => x.id === selectedTargetId);
+      if (t && t.active) {
+        applyReaimToTarget(t, e.latlng);
+        showHint(`Ціль ${t.id}: курс змінено на ${Math.round(t.heading)}°`);
+        render();
+      }
+    }
+  });
+
+  // Лівий клік (один клік / тап)
   map.on('click', function(e) {
+    // 1. Зміна напрямку/перестановка цілі (Reaim) — строго в 1 клік!
+    if (reaimTargetId) {
+      const t = targets.find(x => x.id === reaimTargetId);
+      if (t) {
+        applyReaimToTarget(t, e.latlng);
+        showHint(`Борт ${t.id}: переставлено на новий курс ${Math.round(t.heading)}°`);
+      }
+      if (tempGuideLine) map.removeLayer(tempGuideLine);
+      tempGuideLine = null;
+      reaimTargetId = null;
+      document.body.classList.remove('aiming-mode');
+      hideHint();
+      render();
+      return;
+    }
+
+    // 2. Відновлення цілі
     if (restoringTargetId) {
       const t = targets.find(x => x.id === restoringTargetId);
-      if (!t) { restoringTargetId = null; hideHint(); return; }
+      if (!t) { 
+        restoringTargetId = null; 
+        document.body.classList.remove('aiming-mode');
+        hideHint(); 
+        return; 
+      }
 
       if (restoringStep === 1) {
         restoreStartPos = [e.latlng.lat, e.latlng.lng];
         tempPreviewMarker = L.marker(restoreStartPos, { 
-          icon: createTargetIcon({ ...t, heading: 0, lat: restoreStartPos[0], lng: restoreStartPos[1] }) 
+          icon: createTargetIcon({ ...t, heading: 0, lat: restoreStartPos[0], lng: restoreStartPos[1] }),
+          interactive: false
         }).addTo(map);
         restoringStep = 2;
         showHint(`КЛІК 2: Вкажіть новий курс для борта ${t.id}`);
@@ -1248,31 +1293,14 @@
         if (tempGuideLine) map.removeLayer(tempGuideLine);
         tempPreviewMarker = null; tempGuideLine = null;
         restoringTargetId = null; restoringStep = 0; restoreStartPos = null;
+        document.body.classList.remove('aiming-mode');
         hideHint();
         render();
       }
       return;
     }
 
-    if (reaimTargetId) {
-      const t = targets.find(x => x.id === reaimTargetId);
-      if (t) {
-        const currentSeg = t.segments[t.segments.length - 1];
-        currentSeg.push([e.latlng.lat, e.latlng.lng]);
-        t.lat = e.latlng.lat; 
-        t.lng = e.latlng.lng;
-        const lastP = currentSeg[currentSeg.length - 2];
-        const targetH = calculateHeading([lastP[0], lastP[1]], e.latlng);
-        t.heading = isSimulating ? t.heading : targetH;
-        t.targetHeading = targetH;
-      }
-      if (tempGuideLine) map.removeLayer(tempGuideLine);
-      tempGuideLine = null; reaimTargetId = null;
-      hideHint();
-      render();
-      return;
-    }
-
+    // 3. Введення нової цілі
     if (isAddingMode) {
       if (!pendingTarget) {
         const newId = addId || Math.floor(1000 + Math.random() * 9000).toString();
@@ -1284,7 +1312,10 @@
           segments: [ [[e.latlng.lat, e.latlng.lng]] ],
           active: true, latency: 6
         };
-        tempPreviewMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon: createTargetIcon(pendingTarget) }).addTo(map);
+        tempPreviewMarker = L.marker([e.latlng.lat, e.latlng.lng], { 
+          icon: createTargetIcon(pendingTarget),
+          interactive: false 
+        }).addTo(map);
         showHint('КЛІК 2: Вкажіть вектор польоту');
       } else {
         pendingTarget.lat = e.latlng.lat; 
@@ -1314,6 +1345,7 @@
         if (tempGuideLine) map.removeLayer(tempGuideLine);
         tempPreviewMarker = null; tempGuideLine = null; pendingTarget = null;
         isAddingMode = false;
+        document.body.classList.remove('aiming-mode');
         hideHint();
         render();
       }
@@ -1328,9 +1360,9 @@
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
       tempGuideLine = L.polyline([restoreStartPos, [e.latlng.lat, e.latlng.lng]], {
-        color: '#d91b2b', weight: 1.8, opacity: 0.8
+        color: '#d91b2b', weight: 1.8, opacity: 0.8, interactive: false
       }).addTo(map);
-      showHint(`ВЕКТОР: ${Math.round(targetH)}° (Клікніть для підтвердження)`);
+      showHint(`ВЕКТОР: ${Math.round(targetH)}° (Клікніть 1 раз для підтвердження)`);
       return;
     }
 
@@ -1341,28 +1373,44 @@
       tempPreviewMarker.setIcon(createTargetIcon(pendingTarget));
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
-      tempGuideLine = L.polyline([pendingTarget.segments[0], [e.latlng.lat, e.latlng.lng]], {
-        color: '#d91b2b', weight: 1.8, opacity: 0.8
+      tempGuideLine = L.polyline([pendingTarget.segments[0][0], [e.latlng.lat, e.latlng.lng]], {
+        color: '#d91b2b', weight: 1.8, opacity: 0.8, interactive: false
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(pendingTarget.heading)}° (Клікніть для фіксації)`);
+      return;
     }
 
     if (reaimTargetId) {
       const t = targets.find(x => x.id === reaimTargetId);
       if (t) {
         const currentSeg = t.segments[t.segments.length - 1];
-        const lastPoint = currentSeg[currentSeg.length - 1];
-        const targetH = calculateHeading(lastPoint, e.latlng);
-        t.heading = targetH; 
-        if (layerObjects[t.id] && layerObjects[t.id].marker) {
-          layerObjects[t.id].marker.setLatLng(e.latlng);
-          layerObjects[t.id].marker.setIcon(createTargetIcon(t));
-        }
+        const lastP = (currentSeg && currentSeg.length > 0) ? currentSeg[currentSeg.length - 1] : [t.lat, t.lng];
+        const targetH = calculateHeading(lastP, e.latlng);
+
         if (tempGuideLine) map.removeLayer(tempGuideLine);
-        tempGuideLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {
-          color: '#d91b2b', weight: 1.8, opacity: 0.8
+        tempGuideLine = L.polyline([lastP, [e.latlng.lat, e.latlng.lng]], {
+          color: '#d91b2b', weight: 2, dashArray: '5, 5', opacity: 0.9, interactive: false
         }).addTo(map);
+
+        showHint(`НОВИЙ КУРС: ${Math.round(targetH)}° (ОДИН КЛІК по точці призначення)`);
       }
+    }
+  });
+
+  // Скасування режимів прицілювання клавішею Escape
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      reaimTargetId = null;
+      isAddingMode = false;
+      restoringTargetId = null;
+      pendingTarget = null;
+      if (tempPreviewMarker) map.removeLayer(tempPreviewMarker);
+      if (tempGuideLine) map.removeLayer(tempGuideLine);
+      tempPreviewMarker = null;
+      tempGuideLine = null;
+      document.body.classList.remove('aiming-mode');
+      hideHint();
+      render();
     }
   });
 
