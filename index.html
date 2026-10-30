@@ -563,37 +563,8 @@
     wmLayer.appendChild(node);
   }
 
-  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ТА ШАРІВ ================= */
-  let targets = [
-    {
-      id: '9743', entryMode: 'р', aff: 'ПП', type: 'Supercam',
-      speed: 118, height: 3, heading: 292, targetHeading: 292,
-      lat: 50.15, lng: 35.80, source: 'РЛС', latency: 12,
-      segments: [[[49.90, 36.40], [50.05, 36.05], [50.15, 35.80]]],
-      active: true
-    },
-    {
-      id: '9526', entryMode: 'р', aff: 'ПП', type: 'Ударний дрон',
-      speed: 185, height: 4, heading: 246, targetHeading: 246,
-      lat: 49.32, lng: 36.65, source: 'РТВ', latency: 25,
-      segments: [[[49.65, 37.60], [49.45, 37.10], [49.32, 36.65]]],
-      active: true
-    },
-    {
-      id: '0706', entryMode: '', aff: 'ЗЛ', type: 'Су-35',
-      speed: 950, height: 85, heading: 144, targetHeading: 144,
-      lat: 49.70, lng: 35.10, source: 'РЛС', latency: 8,
-      segments: [[[49.95, 34.70], [49.70, 35.10]]],
-      active: true
-    },
-    {
-      id: '0037', entryMode: 'а', aff: 'ПП', type: 'ASTERIX',
-      speed: 53, height: 25, heading: 160, targetHeading: 160,
-      lat: 48.40, lng: 35.80, source: 'ASTERIX', latency: 14,
-      segments: [[[48.55, 35.75], [48.40, 35.80]]],
-      active: true
-    }
-  ];
+  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ТА ШАРІВ (ПОРОЖНІЙ ПРИ ЗАПУСКУ) ================= */
+  let targets = [];
 
   let layerObjects = {};
   let selectedTargetId = null;
@@ -672,7 +643,7 @@
     }
   };
 
-  /* ================= СИМУЛЯЦІЯ РУХУ (ЗБЕРЕЖЕНО ПОВНИЙ АЛГОРИТМ) ================= */
+  /* ================= СИМУЛЯЦІЯ РУХУ ================= */
   function simulationTick() {
     tickCount++;
     targets.forEach(t => {
@@ -736,7 +707,7 @@
   let tempPreviewMarker = null;
   let tempGuideLine = null;
 
-  /* ================= ТАКТИЧНІ СИМВОЛИ (SVG ЗГІДНО З ДОКУМЕНТАЦІЄЮ) ================= */
+  /* ================= ТАКТИЧНІ СИМВОЛИ (SVG) ================= */
   function getTacticalSvg(t) {
     const col = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#222222');
 
@@ -1370,7 +1341,7 @@
       tempPreviewMarker.setIcon(createTargetIcon(pendingTarget));
 
       if (tempGuideLine) map.removeLayer(tempGuideLine);
-      tempGuideLine = L.polyline([pendingTarget.segments[0][0], [e.latlng.lat, e.latlng.lng]], {
+      tempGuideLine = L.polyline([pendingTarget.segments[0], [e.latlng.lat, e.latlng.lng]], {
         color: '#d91b2b', weight: 1.8, opacity: 0.8
       }).addTo(map);
       showHint(`ВЕКТОР: ${Math.round(pendingTarget.heading)}° (Клікніть для фіксації)`);
