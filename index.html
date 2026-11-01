@@ -507,15 +507,6 @@
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
     </div>
   </div>
-  
-  <!-- Рядок 3: Лінія фронту DeepState -->
-  <div class="toolbar-group-split">
-    <div class="tool-btn" id="btnDeepState" title="Лінія фронту (DeepState)" onclick="toggleDeepState()">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-  </div>
 
   <!-- Звукові повідомлення КХ/УКХ (п. 6.2) -->
   <div class="tool-btn" id="btnRadioAudio" title="Звукові повідомлення КХ/УКХ (п. 6.2)" onclick="toggleRadioAudio()">
@@ -1422,58 +1413,6 @@
       render();
     }
   });
-
-  /* ================= ЛІНІЯ ФРОНТУ ТА ОКУПОВАНІ ТЕРИТОРІЇ (DEEPSTATEMAP) ================= */
-  const deepStateLayerGroup = L.layerGroup();
-  let isDeepStateLoaded = false;
-  let isDeepStateVisible = false;
-
-  window.toggleDeepState = async () => {
-    isDeepStateVisible = !isDeepStateVisible;
-    const btn = document.getElementById('btnDeepState');
-
-    if (isDeepStateVisible) {
-      btn.classList.add('btn-active');
-      deepStateLayerGroup.addTo(map);
-      
-      if (!isDeepStateLoaded) {
-        showHint("Завантаження даних фронту DeepState...");
-        try {
-          // Для уникнення помилок CORS в браузері рекомендується використовувати локальний проксі
-          // замість прямого запиту, наприклад: const url = '/api/deepstate';
-          const url = 'https://deepstatemap.live/api/history/public'; 
-          
-          const response = await fetch(url);
-          if (!response.ok) throw new Error('HTTP Error: ' + response.status);
-          
-          const data = await response.json();
-
-          L.geoJSON(data, {
-            style: function(feature) {
-              const type = feature.properties?.status || feature.properties?.type || '';
-              if (type.includes('occupied') || type === '1') return { color: '#d91b2b', fillColor: '#d91b2b', fillOpacity: 0.25, weight: 1.5 };
-              if (type.includes('liberated') || type === '2') return { color: '#2fa84f', fillColor: '#2fa84f', fillOpacity: 0.2, weight: 1 };
-              if (type.includes('unknown') || type.includes('gray') || type === '3') return { color: '#f5a623', fillColor: '#f5a623', fillOpacity: 0.2, weight: 1 };
-              return { color: '#8893a0', fillOpacity: 0.1, weight: 1 };
-            },
-            interactive: false
-          }).addTo(deepStateLayerGroup);
-          
-          isDeepStateLoaded = true;
-          showHint("Лінію фронту успішно завантажено");
-        } catch (error) {
-          console.error("Помилка завантаження DeepState:", error);
-          showHint("Помилка CORS. Необхідний бекенд-проксі.");
-          btn.classList.remove('btn-active');
-          isDeepStateVisible = false;
-        }
-      }
-    } else {
-      btn.classList.remove('btn-active');
-      map.removeLayer(deepStateLayerGroup);
-      showHint("Лінію фронту приховано");
-    }
-  };
 
   // Первинний запуск
   render();
