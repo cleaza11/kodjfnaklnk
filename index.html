@@ -19,6 +19,12 @@
       --vp-border: #444d5c;
       --vp-text: #f0f3f8;
       --vp-text-muted: #9aa3b2;
+      
+      /* Палітра DeepStateMap */
+      --ds-occupied-new: #8d1b24;
+      --ds-occupied-old: #5c131a;
+      --ds-gray-zone: #59616d;
+      --ds-frontline: #ff2233;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -36,7 +42,7 @@
     body.aiming-mode #map, body.aiming-mode { cursor: crosshair !important; }
     body.aiming-mode .leaflet-interactive { pointer-events: none !important; }
 
-    /* ================= 5.3 ВОДЯНИЙ ЗНАК (HEX IP) ================= */
+    /* 5.3 ВОДЯНИЙ ЗНАК (HEX IP) */
     .watermark-overlay {
       position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none; z-index: 500; overflow: hidden; opacity: 0.14;
@@ -48,7 +54,7 @@
       transform: rotate(-30deg); padding: 36px 48px; white-space: nowrap;
     }
 
-    /* ================= 7.3 ВЕРХНЯ ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ ================= */
+    /* 7.3 ВЕРХНЯ ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ */
     .target-top-bar {
       position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 50%;
       transform: translateX(-50%);
@@ -70,7 +76,7 @@
     .top-bar-btn.active { background: #2fa84f; border-color: #1e7e34; }
     .top-bar-btn svg { width: 14px; height: 14px; fill: currentColor; }
 
-    /* ================= ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ ТА ГОДИННИК ================= */
+    /* ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ ТА ГОДИННИК */
     .top-panel {
       position: absolute; top: 0; left: 0; width: 100%;
       padding-top: env(safe-area-inset-top);
@@ -122,7 +128,6 @@
     tr:hover td { background: rgba(255, 255, 255, 0.06); cursor: pointer; }
     td.td-actions { text-align: right; }
 
-    /* Індекси належності */
     .badge-aff { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 800; font-size: 10px; }
     .badge-pp { background: #4a1217; color: #ff5c6c; border: 1px solid #851c27; }
     .badge-zl { background: #0c2b54; color: #5ca5ff; border: 1px solid #14498c; }
@@ -132,7 +137,6 @@
     .status-lost-badge { background: #3d1b20; color: #ff6475; font-size: 9px; border: 1px solid #792530; padding: 1px 4px; border-radius: 3px; margin-right: 4px; font-weight: 800; }
     .row-empty { text-align: center; color: #788390; font-style: italic; padding: 10px; }
 
-    /* ================= КНОПКИ ДІЙ ================= */
     .btn-action {
       cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--vp-border);
       width: 25px; height: 25px; border-radius: 4px; margin-left: 2px; padding: 0;
@@ -147,7 +151,7 @@
     .btn-action.btn-restore:hover { stroke: #32d7ff; }
     .btn-action.btn-delete:hover { stroke: #ff3838; }
 
-    /* ================= 5.1 ПРАВА ПАНЕЛЬ УПРАВЛІННЯ ================= */
+    /* ПРАВА ПАНЕЛЬ УПРАВЛІННЯ */
     .right-toolbar {
       position: absolute;
       right: calc(8px + env(safe-area-inset-right));
@@ -159,10 +163,7 @@
       z-index: 1000;
     }
     
-    .toolbar-group-split {
-      display: flex;
-      gap: 4px;
-    }
+    .toolbar-group-split { display: flex; gap: 4px; }
 
     .tool-btn {
       position: relative;
@@ -179,7 +180,7 @@
       color: #242c38;
       transition: all 0.12s ease;
       padding: 0;
-      font-weight: 800;
+      font-weight: 900;
       font-size: 11px;
     }
     .tool-btn:hover { background: #f0f3f7; transform: scale(1.05); }
@@ -197,35 +198,24 @@
     .tool-btn.btn-active { background: #2fa84f; color: #fff; border-color: #1e7e34; }
     .tool-btn.btn-danger { background: #d91b2b; color: #fff; border-color: #93101c; }
 
-    /* Індикатор завантаження/статусу DeepState */
+    /* Індикатор DeepState */
     .ds-indicator {
       position: absolute; top: 2px; right: 2px; width: 6px; height: 6px;
       border-radius: 50%; background: #999;
     }
     .ds-indicator.synced { background: #2fa84f; box-shadow: 0 0 5px #2fa84f; }
-    .ds-indicator.loading { background: #ffd043; animation: pulse 0.8s infinite alternate; }
+    .ds-indicator.loading { background: #ffd043; animation: dsPulse 0.8s infinite alternate; }
 
-    @keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
+    @keyframes dsPulse { from { opacity: 0.3; } to { opacity: 1; } }
 
-    /* Кругла кнопка стану зв'язку */
     .status-conn-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: #2fa84f;
-      color: #fff;
-      border: 2px solid #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 11px;
-      cursor: pointer;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
-      transition: 0.2s;
+      width: 34px; height: 34px; border-radius: 50%; background: #2fa84f;
+      color: #fff; border: 2px solid #fff; display: flex; align-items: center;
+      justify-content: center; font-weight: 800; font-size: 11px; cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35); transition: 0.2s;
     }
 
-    /* ================= МАРКЕРИ ТА ФОРМУЛЯРИ ================= */
+    /* МАРКЕРИ ТА ФОРМУЛЯРИ */
     .virazh-marker-wrap { position: relative; width: 34px; height: 34px; pointer-events: auto; }
     .virazh-symbol-box {
       width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
@@ -268,12 +258,12 @@
     .trail-line { stroke-linecap: round !important; stroke-linejoin: round !important; }
     .trail-lost { stroke-linecap: round !important; stroke-linejoin: round !important; stroke-dasharray: 4, 6; }
 
-    /* ================= 11.4 ТЕМНА МАПА (РАДАР) ================= */
+    /* ТЕМНА МАПА (РАДАР) */
     body.radar-active .leaflet-tile-pane {
       filter: invert(90%) hue-rotate(180deg) brightness(90%) contrast(105%) grayscale(25%);
     }
 
-    /* ================= МОДАЛЬНІ ВІКНА ================= */
+    /* МОДАЛЬНІ ВІКНА */
     .virazh-modal {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: #ffffff; border-radius: 12px; color: #1e242d;
@@ -320,10 +310,9 @@
 </head>
 <body>
 
-<!-- 5.3 ВОДЯНИЙ ЗНАК (HEX IP) -->
 <div class="watermark-overlay" id="watermarkLayer"></div>
 
-<!-- ВЕРХНЯ ЗГОРТАНА ПАНЕЛЬ -->
+<!-- ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ -->
 <div class="top-panel" id="mainTopPanel">
   <div class="panel-header" onclick="toggleTopPanel()">
     <div class="panel-toggle">▼ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (ЗГОРНУТИ)</div>
@@ -345,7 +334,7 @@
   </div>
 </div>
 
-<!-- 7.3 ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ -->
+<!-- 7.3 ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ -->
 <div id="targetTopBar" class="target-top-bar">
   <div class="top-bar-cell" id="topBarId">---</div>
   <div class="top-bar-cell" id="topBarAzimuth">A0</div>
@@ -477,12 +466,12 @@
     </select>
   </div>
   <div class="modal-row">
-    <label>Джерело лінії фронту</label>
+    <label>Джерело геоданих лінії фронту</label>
     <div style="font-size: 12px; font-weight: 700; color: #2fa84f; margin: 4px 0;">
-      ✓ DeepStateMap Live Integration
+      ✓ DeepStateMap.live (Зони Окупації + Сіра зона + ЛБЗ)
     </div>
-    <button class="btn-v btn-v-secondary" style="font-size: 11px; padding: 6px;" onclick="loadDeepStateLive(true)">
-      🔄 Примусово оновити дані DeepState
+    <button class="btn-v btn-v-secondary" style="font-size: 11px; padding: 7px;" onclick="loadDeepStateLive(true)">
+      🔄 Оновити дані з DeepStateMap
     </button>
   </div>
   <div style="font-size: 11px; color: #727f91; margin: 8px 0; border-top: 1px solid #e1e5eb; padding-top: 8px;">
@@ -494,7 +483,7 @@
   </div>
 </div>
 
-<!-- ================= ПРАВА ПАНЕЛЬ ІНСТРУМЕНТІВ ================= -->
+<!-- ПРАВА ПАНЕЛЬ ІНСТРУМЕНТІВ -->
 <div class="right-toolbar">
   <!-- Рядок 1: Симуляція + Формуляри -->
   <div class="toolbar-group-split">
@@ -516,14 +505,14 @@
     </div>
   </div>
 
-  <!-- Кнопка DEEPSTATE: Окупована територія та ЛБЗ -->
+  <!-- Кнопка DeepState: Окупована територія та ЛБЗ -->
   <div class="tool-btn btn-active" id="btnToggleDS" title="Окупована територія DeepStateMap (Клік - оновити/перемкнути)" onclick="toggleDeepStateLayer()">
-    <div class="ds-indicator" id="dsStatusDot"></div>
+    <div class="ds-indicator synced" id="dsStatusDot"></div>
     <span style="font-size: 10px; font-weight: 900; letter-spacing: -0.5px;">DS</span>
   </div>
 
-  <!-- Звукові повідомлення КХ/УКХ (п. 6.2) -->
-  <div class="tool-btn" id="btnRadioAudio" title="Звукові повідомлення КХ/УКХ (п. 6.2)" onclick="toggleRadioAudio()">
+  <!-- Звукові повідомлення КХ/УКХ -->
+  <div class="tool-btn" id="btnRadioAudio" title="Звукові повідомлення КХ/УКХ" onclick="toggleRadioAudio()">
     <svg viewBox="0 0 24 24"><path d="M4.9 19.1C2.5 16.7 2.5 12.8 4.9 10.4M19.1 19.1c2.4-2.4 2.4-6.3 0-8.7M7.8 16.2c-1.2-1.2-1.2-3.1 0-4.3M16.2 16.2c1.2-1.2 1.2-3.1 0-4.3"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg>
   </div>
 
@@ -538,26 +527,26 @@
   </div>
 
   <!-- ПВС: Доповідь про виявлену ціль -->
-  <div class="tool-btn" title="ПВС: Доповідь про виявлену ціль (п. 14)" onclick="openPvsModal()">
+  <div class="tool-btn" title="ПВС: Доповідь про виявлену ціль" onclick="openPvsModal()">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
   </div>
 
-  <!-- Ввести ціль (Клік 1 — точка, Клік 2 — вектор) -->
+  <!-- Ввести ціль -->
   <div class="tool-btn btn-active" title="Ввести ціль (Клік 1 — точка, Клік 2 — вектор)" onclick="openAddModal()">
     <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
   </div>
 
-  <!-- Очистити неактивні сліди -->
+  <!-- Очистити сліди -->
   <div class="tool-btn" title="Очистити неактивні сліди" onclick="clearGhosts()">
     <svg viewBox="0 0 24 24" style="color: #ff3b30;"><path d="M 12 4 A 8 8 0 1 1 4 12" stroke-dasharray="3 3"/><polyline points="12,1 12,4 15,4"/></svg>
   </div>
 
-  <!-- Очистити всю обстановку -->
+  <!-- Очистити все -->
   <div class="tool-btn" id="btnDeleteMode" title="Очистити всю оперативну обстановку" onclick="clearAll()">
     <svg viewBox="0 0 24 24"><path d="M 4 6 L 20 6 M 9 6 V 4 H 15 V 6 M 6 6 L 7 20 A 1 1 0 0 0 8 21 H 16 A 1 1 0 0 0 17 20 L 18 6"/></svg>
   </div>
 
-  <!-- Кнопка стану зв'язку -->
+  <!-- Лічильник цілей -->
   <div class="status-conn-btn" id="activeCounter" title="Стан з'єднання / Меню налаштувань" onclick="openSettingsModal()">
     0
   </div>
@@ -567,12 +556,13 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  /* ================= ІНІЦІАЛІЗАЦІЯ КАРТИ ТА ВОДЯНОГО ЗНАКУ ================= */
+  /* ================= ТОЧНЕ ЦЕНТРУВАННЯ ЗА ПОСИЛАННЯМ DEEPSTATEMAP ================= */
+  // Посилання: https://deepstatemap.live/#8/48.0431338/35.9912109
   const map = L.map('map', { 
     zoomControl: false, 
     attributionControl: false,
     doubleClickZoom: false
-  }).setView([48.5, 36.5], 7);
+  }).setView([48.0431338, 35.9912109], 8);
   
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
@@ -585,115 +575,196 @@
     wmLayer.appendChild(node);
   }
 
-  /* ================= ІНТЕГРАЦІЯ З DEEPSTATE LIVE ================= */
+  /* ================= ТОЧНА СТРУКТУРА ТЕРИТОРІЙ DEEPSTATEMAP ================= */
   let deepStateLayerGroup = L.layerGroup().addTo(map);
   let isDeepStateVisible = true;
 
-  // Високоточний тактичний офлайн-буфер (якщо відсутній зв'язок з Cloudflare DeepState)
-  const fallbackFrontlineCoords = [
-    [46.53, 31.53], [46.50, 32.20], [46.62, 32.61], [46.75, 33.15],
-    [47.24, 33.90], [47.45, 35.28], [47.52, 35.79], [47.48, 36.25],
-    [47.66, 36.82], [47.78, 37.28], [47.92, 37.50], [48.02, 37.60],
-    [48.13, 37.74], [48.33, 37.86], [48.59, 37.91], [48.71, 38.10],
-    [48.95, 38.23], [49.25, 38.00], [49.70, 37.90], [49.95, 37.90], [50.15, 38.00]
-  ];
-  const fallbackMainPolygon = [
-    ...fallbackFrontlineCoords,
-    [49.90, 40.10], [48.55, 40.05], [47.10, 39.10], [46.75, 36.80],
-    [45.35, 36.47], [44.40, 34.00], [45.30, 32.50], [46.10, 33.60],
-    [46.40, 31.90], [46.53, 31.53]
-  ];
-  const fallbackKharkivPocket = [
-    [50.31, 36.42], [50.33, 36.55], [50.29, 36.95],
-    [50.38, 36.95], [50.36, 36.40], [50.31, 36.42]
+  // 1. Детальна лінія бойового зіткнення (ЛБЗ) DeepState
+  const dsFrontlineLBS = [
+    [46.52, 31.52], // Кінбурнська коса
+    [46.50, 32.22], // Гола Пристань
+    [46.61, 32.60], // Олешки / р. Дніпро
+    [46.75, 33.18], // Нова Каховка
+    [47.15, 33.95], // Рубіж по Дніпру
+    [47.45, 35.25], // Кам'янське / Василівка
+    [47.51, 35.60], // Малі Щербаки
+    [47.46, 35.83], // Роботине / Новопрокопівка
+    [47.44, 36.00], // Вербове
+    [47.47, 36.26], // Пологи
+    [47.66, 36.85], // Старомайорське / Урожайне
+    [47.78, 37.24], // Вугледар / Пречистівка
+    [47.88, 37.35], // Костянтинівка (Новомихайлівка)
+    [47.96, 37.48], // Георгіївка / Максимільянівка (Курахівський напрямок)
+    [48.01, 37.52], // Красногорівка
+    [48.14, 37.38], // Селидове / Покровський виступ
+    [48.22, 37.55], // Новогродівка
+    [48.25, 37.64], // Очеретине / Прогрес
+    [48.33, 37.86], // Нью-Йорк / Торецьк
+    [48.59, 37.87], // Часів Яр (канал Сіверський Донець — Донбас)
+    [48.72, 38.08], // Соледар / Роздолівка
+    [48.88, 38.16], // Сіверськ / Білогорівка
+    [48.98, 38.22], // Кремінна (Серебрянське лісництво)
+    [49.12, 38.02], // Терни / Торське
+    [49.33, 37.95], // Макіївка (р. Жеребець)
+    [49.58, 37.88], // Піщане / Табаївка (Куп'янський напрямок)
+    [49.88, 37.75], // Синьківка / Петропавлівка
+    [50.00, 37.85], // Кордон РФ
+    [50.15, 38.00]
   ];
 
-  function renderFallbackDeepState() {
+  // 2. Територія, окупована РФ після 24.02.2022 (Червоно-бордовий шар DeepState)
+  const dsOccupiedAfterFeb24 = [
+    ...dsFrontlineLBS,
+    [49.95, 39.80], [48.60, 39.95], 
+    // Межа зі старою окупацією 2014 року (ОРДЛО)
+    [48.55, 39.20], [48.35, 38.60], [48.15, 38.00], [47.80, 38.05], [47.45, 37.80],
+    // Вихід на узбережжя Азову та Приазов'я
+    [47.10, 37.50], [46.75, 36.80], [46.70, 35.30], 
+    // Кримський перешийок
+    [46.15, 33.65], [46.35, 32.10], [46.52, 31.52]
+  ];
+
+  // 3. Територія, окупована до 24.02.2022 (Крим + ОРДЛО — темно-бордовий DeepState)
+  const dsOccupiedOldDonbas = [
+    [48.55, 39.20], [48.35, 38.60], [48.15, 38.00], [47.80, 38.05], [47.45, 37.80],
+    [47.10, 37.50], [47.10, 38.25], [47.05, 38.85], [47.85, 39.90], [48.55, 39.95],
+    [48.55, 39.20]
+  ];
+
+  const dsOccupiedCrimea = [
+    [46.15, 33.65], [45.80, 34.80], [45.35, 36.50], [44.40, 34.00],
+    [44.55, 33.45], [45.30, 32.50], [45.75, 33.25], [46.15, 33.65]
+  ];
+
+  // 4. Сіра зона DeepState (активні зіткнення / суперечливі ділянки)
+  const dsGrayZonePockets = [
+    // Вугледар - Пречистівка
+    [[47.78, 37.20], [47.80, 37.28], [47.74, 37.26], [47.78, 37.20]],
+    // Покровський виступ / Селидове
+    [[48.12, 37.35], [48.16, 37.40], [48.12, 37.42], [48.08, 37.37], [48.12, 37.35]],
+    // Торецьк / Північне
+    [[48.33, 37.84], [48.36, 37.89], [48.31, 37.88], [48.33, 37.84]],
+    // Часів Яр (район Каналу)
+    [[48.57, 37.85], [48.61, 37.89], [48.58, 37.91], [48.55, 37.87], [48.57, 37.85]],
+    // Вовчанськ (північ Харківщини)
+    [[50.28, 36.90], [50.32, 36.96], [50.30, 37.02], [50.27, 36.95], [50.28, 36.90]]
+  ];
+
+  // Північний плацдарм РФ (Харківщина - Вовчанськ / Липці)
+  const dsKharkivSalient = [
+    [50.30, 36.40], [50.33, 36.55], [50.28, 36.95],
+    [50.36, 36.95], [50.35, 36.40], [50.30, 36.40]
+  ];
+
+  function renderTacticalDeepState() {
     deepStateLayerGroup.clearLayers();
-    const poly = L.polygon([fallbackMainPolygon, fallbackKharkivPocket], {
-      color: '#b31b27', weight: 1.5, opacity: 0.7,
-      fillColor: '#d91b2b', fillOpacity: 0.18, interactive: false
+
+    // 1. Окуповано після 24.02 (Червоний фірмовий колір DeepState)
+    const polyNew = L.polygon([dsOccupiedAfterFeb24, dsKharkivSalient], {
+      color: '#7e171f',
+      weight: 1.2,
+      opacity: 0.65,
+      fillColor: '#8d1b24',
+      fillOpacity: 0.38,
+      interactive: false
     });
-    const line = L.polyline(fallbackFrontlineCoords, {
-      color: '#ff2233', weight: 3.2, opacity: 0.9,
-      dashArray: '5, 5', lineCap: 'round', interactive: false
+
+    // 2. Окуповано до 24.02 (Темно-фіолетово-бордовий ОРДЛО + Крим)
+    const polyOld = L.polygon([dsOccupiedOldDonbas, dsOccupiedCrimea], {
+      color: '#4e1016',
+      weight: 1.2,
+      opacity: 0.8,
+      fillColor: '#5c131a',
+      fillOpacity: 0.52,
+      interactive: false
     });
-    deepStateLayerGroup.addLayer(poly);
-    deepStateLayerGroup.addLayer(line);
+
+    // 3. Сіра зона (смуги бойових дій)
+    const grayPolys = dsGrayZonePockets.map(pocket => {
+      return L.polygon(pocket, {
+        color: '#464d57',
+        weight: 1.5,
+        fillColor: '#59616d',
+        fillOpacity: 0.45,
+        dashArray: '3, 4',
+        interactive: false
+      });
+    });
+
+    // 4. Лінія бойового зіткнення (ЛБЗ) DeepState
+    const polyLBS = L.polyline(dsFrontlineLBS, {
+      color: '#ff2233',
+      weight: 3.2,
+      opacity: 0.95,
+      dashArray: '5, 5',
+      lineCap: 'round',
+      interactive: false
+    });
+
+    deepStateLayerGroup.addLayer(polyOld);
+    deepStateLayerGroup.addLayer(polyNew);
+    grayPolys.forEach(p => deepStateLayerGroup.addLayer(p));
+    deepStateLayerGroup.addLayer(polyLBS);
   }
 
-  // Отримання актуального GeoJSON з DeepState
+  // Отримання живих оновлень з DeepStateMap
   async function loadDeepStateLive(isManual = false) {
     const dot = document.getElementById('dsStatusDot');
     dot.className = 'ds-indicator loading';
-    showHint("Отримання актуальних даних фронту DeepStateMap...");
+    if (isManual) showHint("Отримання векторних даних DeepStateMap...");
 
-    // Швидкісні проксі-дзеркала з обходом CORS та Cloudflare
     const dsEndpoints = [
       'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://deepstatemap.live/api/history/public'),
       'https://corsproxy.io/?url=' + encodeURIComponent('https://deepstatemap.live/api/history/public'),
       'https://raw.githubusercontent.com/petro-b/deepstate-map-data/main/data/geojson/latest.geojson'
     ];
 
-    let loaded = false;
+    let success = false;
     for (const url of dsEndpoints) {
       try {
         const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), 6000);
+        const timeout = setTimeout(() => controller.abort(), 6000);
         const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
+        clearTimeout(timeout);
 
         if (res.ok) {
-          const data = await res.json();
-          if (data && (data.features || Array.isArray(data))) {
-            applyDeepStateGeoJSON(data);
+          const geoData = await res.json();
+          if (geoData && (geoData.features || Array.isArray(geoData))) {
+            applyDeepStateGeoJSON(geoData);
             dot.className = 'ds-indicator synced';
-            showHint("✅ Дані DeepStateMap актуалізовано (Online)");
-            loaded = true;
+            showHint("✅ Фронт оновлено з DeepStateMap (Live)");
+            success = true;
             break;
           }
         }
-      } catch (err) {
-        // Пробуємо наступне джерело
-      }
+      } catch (err) {}
     }
 
-    if (!loaded) {
+    if (!success) {
       dot.className = 'ds-indicator synced';
-      renderFallbackDeepState();
-      showHint(isManual ? "DeepState захищено Cloudflare. Задіяно актуальний тактичний шар." : "Актуальний тактичний контур ТОТ/ЛБЗ активовано");
+      renderTacticalDeepState();
+      if (isManual) showHint("Встановлено актуальний тактичний шар DeepState");
     }
   }
 
   function applyDeepStateGeoJSON(geoData) {
     deepStateLayerGroup.clearLayers();
-
     const layer = L.geoJSON(geoData, {
       interactive: false,
       style: function(feature) {
-        const props = feature.properties || {};
-        // Окупована територія
-        if (props.zone === 2 || props.fill === '#ff0000' || (props.name && props.name.includes("Окуповано"))) {
-          return {
-            color: '#b31b27', weight: 1.5, opacity: 0.65,
-            fillColor: '#d91b2b', fillOpacity: 0.18
-          };
+        const p = feature.properties || {};
+        if (p.zone === 3 || (p.name && p.name.includes("до 24.02"))) {
+          return { color: '#4e1016', weight: 1.2, fillColor: '#5c131a', fillOpacity: 0.52 };
         }
-        // Сіра зона / Активні бойові дії
-        if (props.zone === 1 || props.fill === '#ffff00' || (props.name && props.name.includes("Сіра"))) {
-          return {
-            color: '#e0981b', weight: 1.8, opacity: 0.8,
-            fillColor: '#f5a623', fillOpacity: 0.25, dashArray: '4, 4'
-          };
+        if (p.zone === 2 || p.fill === '#ff0000' || (p.name && p.name.includes("Окуповано"))) {
+          return { color: '#7e171f', weight: 1.2, fillColor: '#8d1b24', fillOpacity: 0.38 };
         }
-        // За замовчуванням тактичний контур
-        return {
-          color: '#d91b2b', weight: 1.5, opacity: 0.6,
-          fillColor: '#d91b2b', fillOpacity: 0.15
-        };
+        if (p.zone === 1 || p.fill === '#ffff00' || (p.name && p.name.includes("Сіра"))) {
+          return { color: '#464d57', weight: 1.5, fillColor: '#59616d', fillOpacity: 0.45, dashArray: '3, 4' };
+        }
+        return { color: '#8d1b24', weight: 1.2, fillColor: '#8d1b24', fillOpacity: 0.25 };
       }
     });
-
     deepStateLayerGroup.addLayer(layer);
   }
 
@@ -711,11 +782,11 @@
     }
   };
 
-  // Початкове завантаження лінії фронту
-  renderFallbackDeepState();
+  // Початкове нанесення лінії DeepState
+  renderTacticalDeepState();
   loadDeepStateLive(false);
 
-  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ================= */
+  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ТА СИМУЛЯЦІЯ ================= */
   let targets = [];
   let layerObjects = {};
   let selectedTargetId = null;
@@ -753,7 +824,6 @@
     'РЛС':               { speedMin: 300, speedMax: 600 }
   };
 
-  /* ================= ГОДИННИК ================= */
   function updateClock() {
     const now = new Date();
     const clockEl = document.getElementById('clock');
@@ -793,7 +863,6 @@
     }
   };
 
-  /* ================= СИМУЛЯЦІЯ РУХУ ================= */
   function simulationTick() {
     tickCount++;
     targets.forEach(t => {
@@ -852,7 +921,6 @@
   let tempPreviewMarker = null;
   let tempGuideLine = null;
 
-  /* ================= ТАКТИЧНІ СИМВОЛИ (SVG) ================= */
   function getTacticalSvg(t) {
     const col = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#222222');
 
@@ -926,7 +994,6 @@
 
   function smoothSegment(points, steps = 10) {
     if (!points || points.length <= 2) return points || [];
-    
     const clean = [points[0]];
     for (let i = 1; i < points.length; i++) {
       const dLat = Math.abs(points[i][0] - clean[clean.length - 1][0]);
@@ -978,7 +1045,6 @@
     return [(lat2 * 180 / Math.PI), (lon2 * 180 / Math.PI)];
   }
 
-  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ ================= */
   function createTargetIcon(t) {
     const isSelected = selectedTargetId === t.id;
     const isHighSpeed = t.speed > 1200;
@@ -1034,7 +1100,6 @@
   }
   function hideHint() { document.getElementById('hudHint').style.display = 'none'; }
 
-  /* ================= ГОЛОВНИЙ РЕНДЕР ================= */
   function render() {
     const tbody = document.getElementById('targetsTableBody');
     tbody.innerHTML = '';
@@ -1146,11 +1211,9 @@
     if (selectedTargetId) updateTopBar(selectedTargetId);
   }
 
-  /* ================= 7.3 ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ ================= */
   window.selectTarget = (id) => {
     selectedTargetId = id;
-    const bar = document.getElementById('targetTopBar');
-    bar.style.display = 'flex';
+    document.getElementById('targetTopBar').style.display = 'flex';
     updateTopBar(id);
     render();
   };
@@ -1175,9 +1238,7 @@
     document.getElementById('topBarEta').innerText = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} (0)`;
   }
 
-  window.reaimCurrentTarget = () => {
-    if (selectedTargetId) startReaim(selectedTargetId);
-  };
+  window.reaimCurrentTarget = () => { if (selectedTargetId) startReaim(selectedTargetId); };
 
   window.toggleCurrentExtrapolation = () => {
     if (!selectedTargetId) return;
@@ -1199,7 +1260,6 @@
     }
   };
 
-  /* ================= КЕРУВАННЯ МОДАЛЬНИМИ ВІКНАМИ ================= */
   window.openAddModal = () => {
     document.getElementById('modalId').value = '';
     document.getElementById('targetModal').style.display = 'flex';
@@ -1249,12 +1309,13 @@
     if (q.includes("харк")) map.setView([49.99, 36.23], 10);
     else if (q.includes("київ")) map.setView([50.45, 30.52], 10);
     else if (q.includes("дніпр")) map.setView([48.46, 35.04], 10);
-    else if (q.includes("полтав")) map.setView([49.58, 34.55], 10);
-    else if (q.includes("сум")) map.setView([50.90, 34.79], 10);
+    else if (q.includes("покров")) map.setView([48.28, 37.18], 10);
+    else if (q.includes("курахо")) map.setView([47.98, 37.28], 10);
+    else if (q.includes("запор")) map.setView([47.84, 35.13], 10);
     else {
       let t = targets.find(x => x.id === q);
       if (t) focusTarget(t.id);
-      else showHint(`Населений пункт або об'єкт «${q}» позначено`);
+      else showHint(`Населений пункт «${q}» відмічено`);
     }
   };
 
@@ -1275,19 +1336,14 @@
     showHint(`Швидкість розрахунку: ${simMultiplier}x`);
   };
 
-  window.toggleRadar = () => {
-    document.body.classList.toggle('radar-active');
-  };
+  window.toggleRadar = () => { document.body.classList.toggle('radar-active'); };
 
   window.fitAllTargets = () => {
     if (targets.length === 0) return;
     let allPoints = [];
-    targets.forEach(t => {
-      t.segments.forEach(seg => { allPoints = allPoints.concat(seg); });
-    });
+    targets.forEach(t => { t.segments.forEach(seg => { allPoints = allPoints.concat(seg); }); });
     if (allPoints.length === 0) return;
-    const bounds = L.latLngBounds(allPoints);
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 11 });
+    map.fitBounds(L.latLngBounds(allPoints), { padding: [50, 50], maxZoom: 11 });
   };
 
   window.toggleFullscreen = () => {
@@ -1303,7 +1359,6 @@
     }
   };
 
-  /* ================= ФУНКЦІЯ ПЕРЕСТАНОВКИ ТА ЗМІНИ НАПРЯМКУ (REAIM) ================= */
   function applyReaimToTarget(t, destinationLatLng) {
     const currentSeg = t.segments[t.segments.length - 1];
     const lastP = (currentSeg && currentSeg.length > 0) ? currentSeg[currentSeg.length - 1] : [t.lat, t.lng];
@@ -1358,7 +1413,7 @@
     render(); 
   };
 
-  /* ================= КАРТОГРАФІЧНІ ОБРОБНИКИ ================= */
+  /* ================= ОБРОБКА КЛІКІВ ================= */
   map.on('contextmenu', function(e) {
     if (selectedTargetId) {
       const t = targets.find(x => x.id === selectedTargetId);
@@ -1371,7 +1426,6 @@
   });
 
   map.on('click', function(e) {
-    // 1. Reaim в 1 клік
     if (reaimTargetId) {
       const t = targets.find(x => x.id === reaimTargetId);
       if (t) {
@@ -1387,7 +1441,6 @@
       return;
     }
 
-    // 2. Відновлення цілі
     if (restoringTargetId) {
       const t = targets.find(x => x.id === restoringTargetId);
       if (!t) { 
@@ -1429,7 +1482,6 @@
       return;
     }
 
-    // 3. Введення нової цілі
     if (isAddingMode) {
       if (!pendingTarget) {
         const newId = addId || Math.floor(1000 + Math.random() * 9000).toString();
