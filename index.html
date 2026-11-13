@@ -47,7 +47,7 @@
       transform: rotate(-30deg); padding: 36px 48px; white-space: nowrap;
     }
 
-    /* ================= СТАТУС БОЙОВОЇ ГОТОВНОСТІ (П. 13, РИС. 13.3) ================= */
+    /* ================= СТАТУС БОЙОВОЇ ГОТОВНОСТІ ================= */
     .readiness-banner {
       position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); left: calc(10px + env(safe-area-inset-left));
       background: rgba(24, 30, 39, 0.92); border: 1px solid #4a5464; border-radius: 6px;
@@ -65,7 +65,7 @@
       display: none;
     }
 
-    /* ================= ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ (П. 7.3 / П. 13) ================= */
+    /* ================= ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ ================= */
     .target-top-bar {
       position: absolute; top: calc(36px + env(safe-area-inset-top)); left: 50%;
       transform: translateX(-50%);
@@ -142,7 +142,6 @@
     tr:hover td { background: rgba(255, 255, 255, 0.06); cursor: pointer; }
     td.td-actions { text-align: right; }
 
-    /* Індекси належності */
     .badge-aff { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 800; font-size: 10px; }
     .badge-pp { background: #4a1217; color: #ff5c6c; border: 1px solid #851c27; }
     .badge-zl { background: #0c2b54; color: #5ca5ff; border: 1px solid #14498c; }
@@ -208,7 +207,7 @@
     }
     .status-conn-btn.disconnected { background: #d91b2b; }
 
-    /* ================= МАРКЕРИ ТА ФОРМУЛЯРИ (П. 1, П. 10, П. 13) ================= */
+    /* ================= МАРКЕРИ ТА ФОРМУЛЯРИ ================= */
     .virazh-marker-wrap { position: relative; width: 34px; height: 34px; pointer-events: auto; }
     .virazh-symbol-box {
       width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
@@ -225,18 +224,15 @@
       border: 2px dashed #2fa84f; border-radius: 50%; pointer-events: none;
     }
 
-    /* Маркер ЦВ (мішень навколо цілі — п. 13, рис. 13.1) */
     .cv-target-ring {
       position: absolute; top: -9px; left: -9px; width: 50px; height: 50px;
       pointer-events: none;
     }
-    /* Маркер Заборони роботи (зелений шестикутник — п. 13, рис. 13.2) */
     .zabor-hex-ring {
       position: absolute; top: -9px; left: -9px; width: 50px; height: 50px;
       pointer-events: none;
     }
 
-    /* Смуга статусу зникнення під маркером (3 сегменти) */
     .status-bar-box {
       position: absolute; bottom: -5px; left: 3px; width: 26px; height: 3.5px;
       display: flex; gap: 1.5px;
@@ -246,7 +242,6 @@
     .status-segment.lost { background: #d91b2b; }
     .status-segment.dim { background: rgba(120,120,120,0.35); }
 
-    /* Формуляр цілі (режими 0, 1, 2, 3 — п. 1, стор. 6) */
     .virazh-formular {
       position: absolute; top: -4px; left: 36px;
       font-family: ui-monospace, Consolas, "Segoe UI", sans-serif;
@@ -259,7 +254,7 @@
     .formular-nv { color: #e2e8f0; }
     .formular-type { font-size: 10px; font-weight: 800; color: #ffe066; }
 
-    /* Тактичний знак підрозділу (Опорна точка / МВГ — п. 5, рис. 5.2, п. 11, рис. 11.8) */
+    /* Тактичний знак підрозділу */
     .unit-marker-wrap { position: relative; width: 42px; height: 32px; pointer-events: auto; }
     .unit-box {
       width: 38px; height: 24px; background: rgba(120, 200, 255, 0.88);
@@ -295,7 +290,7 @@
       filter: invert(90%) hue-rotate(180deg) brightness(90%) contrast(105%) grayscale(25%);
     }
 
-    /* ================= КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ (П. 10, РИС. 10.3) ================= */
+    /* ================= КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ ================= */
     .context-menu {
       position: absolute; background: #ffffff; border: 1px solid #cbd5e1;
       border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);
@@ -345,7 +340,6 @@
       background: #f1f4f8; padding: 5px 9px; border-radius: 16px; cursor: pointer;
     }
 
-    /* Сітка команд готовності (п. 13, рис. 13.3) */
     .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 6px 0; }
     .cmd-btn {
       padding: 9px 8px; border-radius: 6px; border: 1px solid #cbd5e1;
@@ -392,16 +386,16 @@
   </div>
 </div>
 
-<!-- ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ + КОМАНДИ ЦВ / ЗАБОРОНА (П. 7.3, П. 13) -->
+<!-- ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ -->
 <div id="targetTopBar" class="target-top-bar">
   <div class="top-bar-cell" id="topBarId">---</div>
-  <div class="top-bar-cell" id="topBarAzimuth" title="Азимут від опорної точки підрозділу">A0°</div>
-  <div class="top-bar-cell" id="topBarDistance" title="Дальність від опорної точки підрозділу">D0 км</div>
+  <div class="top-bar-cell" id="topBarAzimuth" title="Азимут від опорної точки">A0°</div>
+  <div class="top-bar-cell" id="topBarDistance" title="Дальність від опорної точки">D0 км</div>
   <div class="top-bar-cell" id="topBarHeight" title="Висота в гектометрах">H0.0</div>
   <div class="top-bar-cell" id="topBarSpeed" title="Швидкість км/год">V0</div>
-  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;" title="Час / підльотний час до ОТ">00:00 (0хв)</div>
-  <button class="top-bar-btn" id="btnTargetCv" title="Цілевказівка на ціль (ЦВ — п. 13)" onclick="toggleTargetCv()">ЦВ</button>
-  <button class="top-bar-btn" id="btnTargetZabor" title="Заборона роботи по цілі (Забор. — п. 13)" onclick="toggleTargetZabor()">Забор.</button>
+  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;" title="Час / підльотний час">00:00 (0хв)</div>
+  <button class="top-bar-btn" id="btnTargetCv" title="Цілевказівка на ціль (ЦВ)" onclick="toggleTargetCv()">ЦВ</button>
+  <button class="top-bar-btn" id="btnTargetZabor" title="Заборона роботи по цілі (Забор.)" onclick="toggleTargetZabor()">Забор.</button>
   <button class="top-bar-btn" title="Змінити вектор польоту (Reaim) — 1 клік" onclick="reaimCurrentTarget()">
     <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
   </button>
@@ -413,19 +407,19 @@
   </button>
 </div>
 
-<!-- ІНДИКАТОР ГОТОВНОСТІ ПІДРОЗДІЛУ ТА ПЕЛЕНГАТОРА A-D -->
-<div class="readiness-banner" onclick="openCommandsModal()" title="Натисніть для відкриття панелі команд готовності (п. 13)">
+<!-- ІНДИКАТОР ГОТОВНОСТІ ТА ПЕЛЕНГАТОРА A-D -->
+<div class="readiness-banner" onclick="openCommandsModal()" title="Натисніть для відкриття панелі команд готовності">
   <div class="readiness-row">
     <span class="readiness-dot" id="readinessDot"></span>
     <span id="readinessText">ГОТОВНІСТЬ-2 | ШТИЛЬ</span>
   </div>
-  <div style="font-size: 10px; color: #9aa3b2;" id="unitCoordsLabel">ОТ: 47.84°N 35.14°E (R=180 км)</div>
+  <div style="font-size: 10px; color: #9aa3b2;" id="unitCoordsLabel">ОТ: не встановлено</div>
   <div class="ad-readout" id="adReadout">A-D: A 0° | D 0.0 км</div>
 </div>
 
 <div id="hudHint" class="hud-hint">Очікування команд...</div>
 
-<!-- КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ ЦІЛІ (П. 10, РИС. 10.3) -->
+<!-- КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ ЦІЛІ -->
 <div id="targetContextMenu" class="context-menu">
   <div class="context-item" onclick="setContextRecognition('ЗЛ', null)">🔵 свій</div>
   <div class="context-item" onclick="setContextRecognition('ПП', null)">🔴 чужий (пов. противник)</div>
@@ -519,10 +513,10 @@
   </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО: КОМАНДИ ГОТОВНОСТІ ТА ОПОВІЩЕННЯ (П. 13, РИС. 13.3) -->
+<!-- МОДАЛЬНЕ ВІКНО: КОМАНДИ ГОТОВНОСТІ ТА ОПОВІЩЕННЯ -->
 <div id="commandsModal" class="virazh-modal">
   <div class="modal-head">
-    <h3>Команди готовності та оповіщення (п. 13)</h3>
+    <h3>Команди готовності та оповіщення</h3>
     <span class="modal-close" onclick="closeModal('commandsModal')">✕</span>
   </div>
   <div style="font-size: 11px; color: #536074; margin-bottom: 6px;">
@@ -543,22 +537,22 @@
   </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО: ОПОРНА ТОЧКА ПІДРОЗДІЛУ ТА НАЛАШТУВАННЯ (П. 5, 11, 12) -->
+<!-- МОДАЛЬНЕ ВІКНО: ОПОРНА ТОЧКА ПІДРОЗДІЛУ ТА НАЛАШТУВАННЯ -->
 <div id="settingsModal" class="virazh-modal">
   <div class="modal-head">
     <h3>Налаштування АРМ та Опорної Точки</h3>
     <span class="modal-close" onclick="closeModal('settingsModal')">✕</span>
   </div>
   <div class="modal-row">
-    <label>Умовна назва підрозділу (п. 11 — без дійсних назв!)</label>
+    <label>Умовна назва підрозділу</label>
     <input type="text" id="unitNameInput" value="1 п.г. ПЗРК (Опорна точка)">
   </div>
   <div class="modal-row">
-    <label>Радіус зони обмеження відображення R, км (п. 2, 5)</label>
-    <input type="number" id="unitRadiusInput" value="180" min="10" max="500">
+    <label>Радіус зони обмеження відображення R, км (0 — без круга)</label>
+    <input type="number" id="unitRadiusInput" value="0" min="0" max="500">
   </div>
   <div class="modal-row">
-    <label>Статус зв'язку з ВКП (п. 5, рис. 5.2)</label>
+    <label>Статус зв'язку з ВКП</label>
     <select id="unitStatusSelect">
       <option value="online">Активний обмін (сині індикатори)</option>
       <option value="warn">Затримка відповіді (червоні індикатори)</option>
@@ -578,6 +572,7 @@
     Статична IP: 10.18.85.226 [HEX: 0a1255e2]
   </div>
   <div class="modal-actions">
+    <button class="btn-v btn-v-secondary" onclick="hideUnitOnMap()">Прибрати з карти</button>
     <button class="btn-v btn-v-secondary" onclick="startMoveUnit()">Вказати ОТ на карті</button>
     <button class="btn-v btn-v-primary" onclick="saveUnitSettings()">Зберегти</button>
   </div>
@@ -585,67 +580,56 @@
 
 <!-- ================= ПРАВА КОМПАКТНА ПАНЕЛЬ ІНСТРУМЕНТІВ ================= -->
 <div class="right-toolbar">
-  <!-- Рядок 1: Симуляція + Режим формуляра 0/1/2/3 (п. 1, стор. 6) -->
   <div class="toolbar-group-split">
     <div class="tool-btn" id="btnSim" title="Симуляція руху (Play/Pause)" onclick="toggleSimulation()">
       <svg id="simIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
     </div>
-    <div class="tool-btn" id="btnFormularMode" title="Режим формуляру цілі: 0 / 1 / 2 / 3 (п. 1)" onclick="cycleFormularMode()">
+    <div class="tool-btn" id="btnFormularMode" title="Режим формуляру цілі: 0 / 1 / 2 / 3" onclick="cycleFormularMode()">
       Ф:3
     </div>
   </div>
 
-  <!-- Рядок 2: Радар + Пеленгатор A-D (п. 1, стор. 5) -->
   <div class="toolbar-group-split">
     <div class="tool-btn" title="Темний радар-режим" onclick="toggleRadar()">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M 8 8 A 5 5 0 0 0 8 16 M 16 8 A 5 5 0 0 1 16 16 M 5 5 A 10 10 0 0 0 5 19 M 19 5 A 10 10 0 0 1 19 19"/></svg>
     </div>
-    <div class="tool-btn" id="btnAdTool" title="Курсор відносно точки (A-D — п. 1)" onclick="toggleAdTool()">
+    <div class="tool-btn" id="btnAdTool" title="Курсор відносно точки (A-D)" onclick="toggleAdTool()">
       A-D
     </div>
   </div>
 
-  <!-- Пошук населеного пункту -->
   <div class="tool-btn" title="Пошук населеного пункту або цілі" onclick="searchLocality()">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
   </div>
 
-  <!-- Звукові повідомлення (Web Speech / Сигнал) -->
   <div class="tool-btn" id="btnRadioAudio" title="Голосові сповіщення та сигнали КХ/УКХ" onclick="toggleRadioAudio()">
     <svg viewBox="0 0 24 24"><path d="M4.9 19.1C2.5 16.7 2.5 12.8 4.9 10.4M19.1 19.1c2.4-2.4 2.4-6.3 0-8.7M7.8 16.2c-1.2-1.2-1.2-3.1 0-4.3M16.2 16.2c1.2-1.2 1.2-3.1 0-4.3"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg>
   </div>
 
-  <!-- Охопити всі цілі -->
-  <div class="tool-btn" title="Охопити всі цілі та підрозділ" onclick="fitAllTargets()">
+  <div class="tool-btn" title="Охопити всі цілі" onclick="fitAllTargets()">
     <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="15" y2="15"/><polyline points="15,9 15,15 9,15"/><line x1="19" y1="4" x2="19" y2="20"/></svg>
   </div>
 
-  <!-- Повноекранний режим -->
   <div class="tool-btn" title="Повноекранний режим" onclick="toggleFullscreen()">
     <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg>
   </div>
 
-  <!-- ПВС: Доповідь про виявлену ціль -->
   <div class="tool-btn" title="ПВС: Доповідь про виявлену ціль" onclick="openPvsModal()">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
   </div>
 
-  <!-- Ввести ціль -->
   <div class="tool-btn btn-active" title="Ввести ціль (Клік 1 — точка, Клік 2 — вектор)" onclick="openAddModal()">
     <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
   </div>
 
-  <!-- Очистити архівні сліди -->
   <div class="tool-btn" title="Очистити архівні сліди" onclick="clearGhosts()">
     <svg viewBox="0 0 24 24" style="color: #ff3b30;"><path d="M 12 4 A 8 8 0 1 1 4 12" stroke-dasharray="3 3"/><polyline points="12,1 12,4 15,4"/></svg>
   </div>
 
-  <!-- Очистити всю обстановку -->
   <div class="tool-btn" title="Очистити всю повітряну обстановку" onclick="clearAll()">
     <svg viewBox="0 0 24 24"><path d="M 4 6 L 20 6 M 9 6 V 4 H 15 V 6 M 6 6 L 7 20 A 1 1 0 0 0 8 21 H 16 A 1 1 0 0 0 17 20 L 18 6"/></svg>
   </div>
 
-  <!-- Кнопка налаштувань та лічильник активних цілей -->
   <div class="status-conn-btn" id="activeCounter" title="Налаштування АРМ та Опорної Точки" onclick="openSettingsModal()">
     0
   </div>
@@ -672,13 +656,14 @@
     wmLayer.appendChild(node);
   }
 
-  /* ================= ОПОРНА ТОЧКА СВОГО ПІДРОЗДІЛУ (П. 5, 11, 12) ================= */
+  /* ================= ОПОРНА ТОЧКА СВОГО ПІДРОЗДІЛУ (ВИМКНЕНА ПРИ ВХОДІ) ================= */
   let unitPosition = {
+    visible: false,
     name: "1 п.г. ПЗРК (Опорна точка)",
     lat: 47.84,
     lng: 35.14,
-    radiusKm: 180,
-    status: "online" // online | warn | offline
+    radiusKm: 0,
+    status: "online"
   };
   let unitMarker = null;
   let unitRangeCircle = null;
@@ -691,7 +676,6 @@
   let contextTargetId = null;
   let extrapolationCircles = {};
 
-  // Режими формуляра: 3 = повний, 2 = номер+тип+належність, 1 = тільки номер, 0 = тільки знак (п. 1, стор. 6)
   let formularMode = 3;
   let isAdToolActive = false;
   let adLine = null;
@@ -728,7 +712,6 @@
     'РЛС':               { speedMin: 300, speedMax: 600 }
   };
 
-  /* ================= ГОЛОСОВЕ СПОВІЩЕННЯ ================= */
   function speakAlert(text) {
     if (!isRadioAudioActive || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
@@ -738,7 +721,6 @@
     window.speechSynthesis.speak(u);
   }
 
-  /* ================= ГЕОДЕЗИЧНІ РОЗРАХУНКИ (АЗИМУТ ТА ДАЛЬНІСТЬ) ================= */
   function calcGeoDistanceKm(lat1, lon1, lat2, lon2) {
     const R = 6371.01;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -758,10 +740,21 @@
     return Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360);
   }
 
+  function getReferencePoint() {
+    if (unitPosition.visible) return { lat: unitPosition.lat, lng: unitPosition.lng };
+    const c = map.getCenter();
+    return { lat: c.lat, lng: c.lng };
+  }
+
   /* ================= ВІДОБРАЖЕННЯ ПІДРОЗДІЛУ (ОПОРНОЇ ТОЧКИ) ================= */
   function renderUnitPosition() {
-    if (unitMarker) map.removeLayer(unitMarker);
-    if (unitRangeCircle) map.removeLayer(unitRangeCircle);
+    if (unitMarker) { map.removeLayer(unitMarker); unitMarker = null; }
+    if (unitRangeCircle) { map.removeLayer(unitRangeCircle); unitRangeCircle = null; }
+
+    if (!unitPosition.visible) {
+      document.getElementById('unitCoordsLabel').textContent = 'ОТ: не встановлено';
+      return;
+    }
 
     const dotClass = unitPosition.status === 'online' ? 'online' : (unitPosition.status === 'warn' ? 'warn' : 'offline');
     const unitHtml = `
@@ -795,7 +788,7 @@
     }
 
     document.getElementById('unitCoordsLabel').textContent =
-      `ОТ: ${unitPosition.lat.toFixed(2)}°N ${unitPosition.lng.toFixed(2)}°E (R=${unitPosition.radiusKm} км)`;
+      `ОТ: ${unitPosition.lat.toFixed(2)}°N ${unitPosition.lng.toFixed(2)}°E${unitPosition.radiusKm > 0 ? ' (R=' + unitPosition.radiusKm + ' км)' : ''}`;
   }
 
   /* ================= ГОДИННИК ================= */
@@ -807,9 +800,9 @@
   setInterval(updateClock, 1000);
   updateClock();
 
-  /* ================= РЕЖИМИ ФОРМУЛЯРА 0 / 1 / 2 / 3 (П. 1, СТОР. 6) ================= */
+  /* ================= РЕЖИМИ ФОРМУЛЯРА 0 / 1 / 2 / 3 ================= */
   window.cycleFormularMode = () => {
-    formularMode = (formularMode + 3) % 4; // 3 -> 2 -> 1 -> 0 -> 3
+    formularMode = (formularMode + 3) % 4;
     const btn = document.getElementById('btnFormularMode');
     btn.innerText = `Ф:${formularMode}`;
     const modeNames = {
@@ -822,7 +815,7 @@
     render();
   };
 
-  /* ================= ПЕЛЕНГАТОР A-D (П. 1, СТОР. 5) ================= */
+  /* ================= ПЕЛЕНГАТОР A-D ================= */
   window.toggleAdTool = () => {
     isAdToolActive = !isAdToolActive;
     const btn = document.getElementById('btnAdTool');
@@ -830,7 +823,7 @@
     if (isAdToolActive) {
       btn.classList.add('btn-active');
       readout.style.display = 'block';
-      showHint("Режим A-D: наводьте курсор для виміру азимута і дальності від ОТ");
+      showHint("Режим A-D: наводьте курсор для виміру азимута і дальності");
     } else {
       btn.classList.remove('btn-active');
       readout.style.display = 'none';
@@ -866,6 +859,7 @@
   /* ================= СИМУЛЯЦІЯ РУХУ ================= */
   function simulationTick() {
     tickCount++;
+    const ref = getReferencePoint();
     targets.forEach(t => {
       if (!t.active) return;
 
@@ -898,7 +892,7 @@
           layerObjects[t.id].ray.setLatLngs([[t.lat, t.lng], rayEnd]);
         }
         if (layerObjects[t.id].cmdLine) {
-          layerObjects[t.id].cmdLine.setLatLngs([[unitPosition.lat, unitPosition.lng], [t.lat, t.lng]]);
+          layerObjects[t.id].cmdLine.setLatLngs([[ref.lat, ref.lng], [t.lat, t.lng]]);
         }
         if (layerObjects[t.id].trail) {
           const displaySegments = t.segments.map(s => [...s]);
@@ -1041,7 +1035,7 @@
     return [(lat2 * 180 / Math.PI), (lon2 * 180 / Math.PI)];
   }
 
-  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ (З УРАХУВАННЯМ РЕЖИМУ ФОРМУЛЯРА 0/1/2/3 ТА КОМАНД ЦВ/ЗАБОР) ================= */
+  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ ================= */
   function createTargetIcon(t) {
     const isSelected = selectedTargetId === t.id;
     const isHighSpeed = t.speed > 1200;
@@ -1060,7 +1054,6 @@
       </div>
     `;
 
-    // Візуалізація команди ЦВ (мішень — п. 13, рис. 13.1) або Заборони роботи (зелений шестикутник — п. 13, рис. 13.2)
     let cmdRingHtml = '';
     if (t.command === 'CV') {
       cmdRingHtml = `
@@ -1079,7 +1072,6 @@
         </svg>`;
     }
 
-    // Формування тексту формуляра згідно з п. 1 (стор. 6 документації)
     let formularContent = '';
     const effectiveMode = isSelected ? 3 : formularMode;
     if (effectiveMode === 1) {
@@ -1124,6 +1116,7 @@
   function render() {
     const tbody = document.getElementById('targetsTableBody');
     tbody.innerHTML = '';
+    const ref = getReferencePoint();
 
     Object.values(layerObjects).forEach(obj => {
       if (obj.marker) map.removeLayer(obj.marker);
@@ -1147,9 +1140,8 @@
           color: '#555e6d', weight: 1.5, opacity: 0.7, interactive: false
         }).addTo(map);
 
-        // Пунктирна лінія від опорної точки підрозділу при команді ЦВ або Заборона (п. 13, рис. 13.1-13.2)
-        if (t.command === 'CV' || t.command === 'ZABOR') {
-          layerObjects[t.id].cmdLine = L.polyline([[unitPosition.lat, unitPosition.lng], [t.lat, t.lng]], {
+        if ((t.command === 'CV' || t.command === 'ZABOR') && unitPosition.visible) {
+          layerObjects[t.id].cmdLine = L.polyline([[ref.lat, ref.lng], [t.lat, t.lng]], {
             color: t.command === 'CV' ? '#d91b2b' : '#2fa84f',
             weight: 2,
             dashArray: '6, 6',
@@ -1247,7 +1239,7 @@
     if (selectedTargetId) updateTopBar(selectedTargetId);
   }
 
-  /* ================= КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ (П. 10, РИС. 10.3) ================= */
+  /* ================= КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ ================= */
   function openTargetContextMenu(id, x, y) {
     contextTargetId = id;
     const menu = document.getElementById('targetContextMenu');
@@ -1292,9 +1284,9 @@
     const t = targets.find(x => x.id === id);
     if (!t) return;
 
-    // Реальний розрахунок азимута A та дальності D від Опорної точки підрозділу до цілі
-    const azim = calcGeoBearing(unitPosition.lat, unitPosition.lng, t.lat, t.lng);
-    const distKm = calcGeoDistanceKm(unitPosition.lat, unitPosition.lng, t.lat, t.lng);
+    const ref = getReferencePoint();
+    const azim = calcGeoBearing(ref.lat, ref.lng, t.lat, t.lng);
+    const distKm = calcGeoDistanceKm(ref.lat, ref.lng, t.lat, t.lng);
     const etaMin = t.speed > 0 ? Math.round((distKm / t.speed) * 60) : 0;
 
     document.getElementById('topBarId').innerText = `${t.id}${t.entryMode || 'р'}`;
@@ -1331,7 +1323,7 @@
     if (!t) return;
     t.command = (t.command === 'ZABOR') ? null : 'ZABOR';
     if (t.command === 'ZABOR') {
-      showHint(`ЗАБОРОНА РОБОТИ по цілі №${t.id} (працює винищувальна авіація / сусідній ЗРВ)`);
+      showHint(`ЗАБОРОНА РОБОТИ по цілі №${t.id}`);
       speakAlert(`Заборона роботи по цілі ${t.id}`);
     } else {
       showHint(`Відміна заборони роботи по цілі №${t.id}`);
@@ -1384,6 +1376,14 @@
     speakAlert(`Увага! Команда: ${label}`);
   };
 
+  window.hideUnitOnMap = () => {
+    unitPosition.visible = false;
+    closeModal('settingsModal');
+    renderUnitPosition();
+    render();
+    showHint("Позначку підрозділу прибрано з карти");
+  };
+
   window.saveUnitSettings = () => {
     unitPosition.name = document.getElementById('unitNameInput').value.trim() || "1 п.г. ПЗРК";
     unitPosition.radiusKm = parseFloat(document.getElementById('unitRadiusInput').value) || 0;
@@ -1391,14 +1391,14 @@
     closeModal('settingsModal');
     renderUnitPosition();
     if (selectedTargetId) updateTopBar(selectedTargetId);
-    showHint("Параметри опорної точки підрозділу оновлено");
+    showHint("Параметри АРМ оновлено");
   };
 
   window.startMoveUnit = () => {
     closeModal('settingsModal');
     isMovingUnitMode = true;
     document.body.classList.add('aiming-mode');
-    showHint("Клікніть на карті для встановлення Опорної Точки підрозділу (800м–9км від позиції)");
+    showHint("Клікніть на карті для встановлення Опорної Точки підрозділу");
   };
 
   window.confirmAddTarget = () => {
@@ -1420,13 +1420,14 @@
     const type = document.querySelector('input[name="pvsType"]:checked').value;
     const course = parseFloat(document.getElementById('pvsCourse').value) || 180;
     const newId = Math.floor(2000 + Math.random() * 7000).toString();
+    const ref = getReferencePoint();
 
     targets.push({
       id: newId, entryMode: 'р', aff: 'ПП', type: type,
       speed: 155, height: 4, heading: course, targetHeading: course,
       source: 'ПВС', active: true, latency: 4, command: null,
-      lat: unitPosition.lat + 0.03, lng: unitPosition.lng + 0.03,
-      segments: [[[unitPosition.lat + 0.03, unitPosition.lng + 0.03]]]
+      lat: ref.lat + 0.03, lng: ref.lng + 0.03,
+      segments: [[[ref.lat + 0.03, ref.lng + 0.03]]]
     });
     showHint(`Передано доповідь ПВС на АРМ-ЗРВ: ${type}, курс ${course}°`);
     speakAlert(`Доповідь ПВС: ${type}, курс ${course}`);
@@ -1473,10 +1474,15 @@
   window.toggleRadar = () => document.body.classList.toggle('radar-active');
 
   window.fitAllTargets = () => {
-    let allPoints = [[unitPosition.lat, unitPosition.lng]];
+    let allPoints = [];
+    if (unitPosition.visible) allPoints.push([unitPosition.lat, unitPosition.lng]);
     targets.forEach(t => {
       t.segments.forEach(seg => { allPoints = allPoints.concat(seg); });
     });
+    if (allPoints.length === 0) {
+      showHint("Немає активних цілей для масштабування");
+      return;
+    }
     const bounds = L.latLngBounds(allPoints);
     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
   };
@@ -1562,10 +1568,10 @@
   });
 
   map.on('click', function(e) {
-    // 0. Переміщення Опорної Точки підрозділу
     if (isMovingUnitMode) {
       unitPosition.lat = e.latlng.lat;
       unitPosition.lng = e.latlng.lng;
+      unitPosition.visible = true;
       isMovingUnitMode = false;
       document.body.classList.remove('aiming-mode');
       renderUnitPosition();
@@ -1574,7 +1580,6 @@
       return;
     }
 
-    // 1. Зміна напрямку (Reaim)
     if (reaimTargetId) {
       const t = targets.find(x => x.id === reaimTargetId);
       if (t) {
@@ -1590,7 +1595,6 @@
       return;
     }
 
-    // 2. Відновлення цілі
     if (restoringTargetId) {
       const t = targets.find(x => x.id === restoringTargetId);
       if (!t) {
@@ -1625,7 +1629,6 @@
       return;
     }
 
-    // 3. Введення нової цілі
     if (isAddingMode) {
       if (!pendingTarget) {
         const newId = addId || Math.floor(1000 + Math.random() * 9000).toString();
@@ -1682,13 +1685,13 @@
   });
 
   map.on('mousemove', function(e) {
-    // Пеленгатор A-D («Курсор відносно точок» — п. 1, стор. 5)
     if (isAdToolActive) {
-      const az = calcGeoBearing(unitPosition.lat, unitPosition.lng, e.latlng.lat, e.latlng.lng);
-      const dist = calcGeoDistanceKm(unitPosition.lat, unitPosition.lng, e.latlng.lat, e.latlng.lng);
+      const ref = getReferencePoint();
+      const az = calcGeoBearing(ref.lat, ref.lng, e.latlng.lat, e.latlng.lng);
+      const dist = calcGeoDistanceKm(ref.lat, ref.lng, e.latlng.lat, e.latlng.lng);
       document.getElementById('adReadout').innerText = `A-D: A ${az}° | D ${dist.toFixed(1)} км`;
       if (adLine) map.removeLayer(adLine);
-      adLine = L.polyline([[unitPosition.lat, unitPosition.lng], [e.latlng.lat, e.latlng.lng]], {
+      adLine = L.polyline([[ref.lat, ref.lng], [e.latlng.lat, e.latlng.lng]], {
         color: '#2563eb', weight: 1.5, dashArray: '4, 4', interactive: false
       }).addTo(map);
     }
