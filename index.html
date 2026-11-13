@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#1e242e">
+  <meta name="theme-color" content="#252b35">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>АРМ «Віраж-ППО» — Мобільне робоче місце (СПЗ Віраж-Планшет)</title>
+  <title>АРМ «Віраж-ППО» — Мобільне робоче місце</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
@@ -15,8 +15,8 @@
       --vp-blue: #0b62d4;
       --vp-green: #2fa84f;
       --vp-yellow: #f5a623;
-      --vp-panel-bg: rgba(26, 32, 41, 0.95);
-      --vp-border: #3f4856;
+      --vp-panel-bg: rgba(30, 36, 46, 0.94);
+      --vp-border: #444d5c;
       --vp-text: #f0f3f8;
       --vp-text-muted: #9aa3b2;
     }
@@ -32,11 +32,10 @@
     #map { width: 100%; height: 100%; cursor: crosshair; touch-action: none; background: #cdd4dc; }
     .leaflet-control-attribution { display: none !important; }
 
-    /* Режим прицілювання: об'єкти карти не перехоплюють перший клік */
     body.aiming-mode #map, body.aiming-mode { cursor: crosshair !important; }
     body.aiming-mode .leaflet-interactive { pointer-events: none !important; }
 
-    /* ================= ВОДЯНИЙ ЗНАК (HEX IP, п. 5.3) ================= */
+    /* ================= ВОДЯНИЙ ЗНАК (HEX IP) ================= */
     .watermark-overlay {
       position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none; z-index: 500; overflow: hidden; opacity: 0.13;
@@ -44,137 +43,138 @@
     }
     .watermark-node {
       font-family: ui-monospace, Consolas, monospace;
-      font-size: 14px; font-weight: 800; color: #475363;
-      transform: rotate(-30deg); padding: 38px 50px; white-space: nowrap;
+      font-size: 15px; font-weight: 800; color: #475363;
+      transform: rotate(-30deg); padding: 36px 48px; white-space: nowrap;
     }
 
-    /* ================= ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ, СТАТУС ВКП ТА ГОДИННИК ================= */
+    /* ================= СТАТУС БОЙОВОЇ ГОТОВНОСТІ (П. 13, РИС. 13.3) ================= */
+    .readiness-banner {
+      position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); left: calc(10px + env(safe-area-inset-left));
+      background: rgba(24, 30, 39, 0.92); border: 1px solid #4a5464; border-radius: 6px;
+      padding: 6px 12px; color: #fff; z-index: 1050; font-size: 11px; font-weight: 800;
+      display: flex; flex-direction: column; gap: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      pointer-events: auto; cursor: pointer;
+    }
+    .readiness-row { display: flex; align-items: center; gap: 6px; }
+    .readiness-dot { width: 8px; height: 8px; border-radius: 50%; background: #2fa84f; }
+    .readiness-dot.alert { background: #ff3b30; box-shadow: 0 0 8px #ff3b30; }
+    .readiness-dot.warn { background: #f5a623; }
+    .ad-readout {
+      font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: #6ee7b7;
+      border-top: 1px solid rgba(255,255,255,0.12); padding-top: 3px; margin-top: 2px;
+      display: none;
+    }
+
+    /* ================= ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ (П. 7.3 / П. 13) ================= */
+    .target-top-bar {
+      position: absolute; top: calc(36px + env(safe-area-inset-top)); left: 50%;
+      transform: translateX(-50%);
+      background: #4e5663; border: 1px solid #353b45; border-radius: 5px;
+      color: #fff; display: none; align-items: center; gap: 4px; padding: 4px 6px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5); z-index: 1200;
+      font-family: ui-monospace, Consolas, monospace; font-size: 12px; font-weight: 700;
+      flex-wrap: wrap; justify-content: center; max-width: 96vw;
+    }
+    .top-bar-cell {
+      background: #6c7584; padding: 3px 7px; border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.2); white-space: nowrap;
+    }
+    .top-bar-btn {
+      height: 25px; min-width: 26px; border: 1px solid #3c434f; border-radius: 3px;
+      background: #5c6472; color: #fff; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; padding: 0 6px; font-size: 11px; font-weight: 800;
+    }
+    .top-bar-btn:hover { background: #7b8494; }
+    .top-bar-btn.active { background: #2fa84f; border-color: #1e7e34; }
+    .top-bar-btn.btn-cv-active { background: #d91b2b; border-color: #8f0f1a; }
+    .top-bar-btn.btn-zabor-active { background: #1e8e3e; border-color: #135e28; }
+    .top-bar-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* ================= ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ ТА ГОДИННИК ================= */
     .top-panel {
       position: absolute; top: 0; left: 0; width: 100%;
       padding-top: env(safe-area-inset-top);
       background: var(--vp-panel-bg);
-      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--vp-border);
       color: var(--vp-text); font-size: 12px; display: flex; flex-direction: column;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.4); transition: all 0.25s ease;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.35); transition: all 0.3s ease;
       z-index: 1000;
     }
     .panel-header {
-      position: relative; display: flex; justify-content: space-between; align-items: center;
-      padding: 6px 12px; cursor: pointer; font-size: 11px; font-weight: 800;
-      letter-spacing: 0.4px; border-bottom: 1px solid rgba(255,255,255,0.08);
-      gap: 8px;
+      position: relative; display: flex; justify-content: center; align-items: center;
+      padding: 6px 15px; cursor: pointer; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.6px; border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .panel-header:hover { background: rgba(255, 255, 255, 0.04); }
-    .panel-toggle { transition: transform 0.25s ease; font-size: 11px; color: var(--vp-text-muted); white-space: nowrap; }
+    .panel-header:hover { background: rgba(255, 255, 255, 0.05); }
+    .panel-toggle { transition: transform 0.3s ease; font-size: 11px; color: var(--vp-text-muted); }
+    .top-panel.collapsed .panel-toggle { transform: rotate(-180deg); }
     .top-panel.collapsed .table-container { max-height: 0 !important; border-top: none; }
 
-    /* Статус бойової готовності від ВКП (рис. 13.3) */
-    .vkp-status-pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: 800;
-      background: #233042; border: 1px solid #3c5270; color: #8ec5ff;
-      cursor: pointer; white-space: nowrap;
-    }
-    .vkp-status-pill.alert-g1 { background: #5e141b; border-color: #d91b2b; color: #ff8590; animation: pulseAlert 1.5s infinite; }
-    .vkp-status-pill.alert-rn { background: #6b1111; border-color: #ff2e2e; color: #fff; animation: pulseAlert 0.9s infinite; }
-    .vkp-status-pill.alert-g2 { background: #54380c; border-color: #f5a623; color: #ffd480; }
-    .vkp-status-pill.alert-ok { background: #163d22; border-color: #2fa84f; color: #75eb95; }
-
-    @keyframes pulseAlert {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.65; }
-    }
-
     .clock {
+      position: absolute; right: calc(14px + env(safe-area-inset-right));
       font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 12px; font-weight: 700; color: #5cdb7a; letter-spacing: 0.5px;
-      white-space: nowrap;
     }
 
     .table-container {
       overflow-y: auto; overflow-x: auto; padding: 0; -webkit-overflow-scrolling: touch;
-      max-height: 26vh; transition: max-height 0.25s ease-in-out;
+      max-height: 26vh; transition: max-height 0.3s ease-in-out;
     }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     col.col-id { width: 22%; }
-    col.col-aff { width: 11%; }
-    col.col-type { width: 19%; }
-    col.col-hv { width: 17%; }
+    col.col-aff { width: 10%; }
+    col.col-type { width: 18%; }
+    col.col-hv { width: 16%; }
     col.col-c { width: 9%; }
-    col.col-actions { width: 22%; }
+    col.col-actions { width: 25%; }
 
     th {
-      font-weight: 800; color: #9aa6b5; font-size: 10px; text-transform: uppercase;
+      font-weight: 800; color: #a2adb9; font-size: 10px; text-transform: uppercase;
       padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--vp-border);
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.25);
     }
     td {
-      padding: 5px 8px; font-weight: 600; font-size: 11.5px; color: #e7ecf2;
+      padding: 5px 8px; font-weight: 600; font-size: 12px; color: #e7ecf2;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, Consolas, monospace;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace;
     }
     tr:hover td { background: rgba(255, 255, 255, 0.06); cursor: pointer; }
-    tr.row-selected td { background: rgba(47, 168, 79, 0.16); }
     td.td-actions { text-align: right; }
 
-    /* Індекси належності та команди ВКП */
-    .badge-aff { display: inline-block; padding: 1px 5px; border-radius: 3px; font-weight: 800; font-size: 10px; }
+    /* Індекси належності */
+    .badge-aff { display: inline-block; padding: 2px 5px; border-radius: 3px; font-weight: 800; font-size: 10px; }
     .badge-pp { background: #4a1217; color: #ff5c6c; border: 1px solid #851c27; }
     .badge-zl { background: #0c2b54; color: #5ca5ff; border: 1px solid #14498c; }
     .badge-nv { background: #2f343b; color: #c0c6cf; border: 1px solid #4f5663; }
-    .badge-cmd-cv { background: #d91b2b; color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 2px; margin-left: 3px; font-weight: 800; }
-    .badge-cmd-forbid { background: #1e7e34; color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 2px; margin-left: 3px; font-weight: 800; }
 
-    tr.row-lost td { color: #8893a0 !important; background: rgba(0,0,0,0.28); font-style: italic; }
+    .badge-cmd-cv { background: #d91b2b; color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 800; }
+    .badge-cmd-zabor { background: #2fa84f; color: #fff; font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 800; }
+
+    tr.row-lost td { color: #8893a0 !important; background: rgba(0,0,0,0.25); font-style: italic; }
     .status-lost-badge { background: #3d1b20; color: #ff6475; font-size: 9px; border: 1px solid #792530; padding: 1px 4px; border-radius: 3px; margin-right: 4px; font-weight: 800; }
     .row-empty { text-align: center; color: #788390; font-style: italic; padding: 10px; }
 
-    /* ================= КНОПКИ ДІЙ У ТАБЛИЦІ ================= */
+    /* ================= КНОПКИ ДІЙ ================= */
     .btn-action {
       cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--vp-border);
       width: 24px; height: 24px; border-radius: 4px; margin-left: 2px; padding: 0;
       display: inline-flex; justify-content: center; align-items: center; vertical-align: middle;
       transition: all 0.15s; color: #fff;
     }
-    .btn-action svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .btn-action:hover { background: rgba(255, 255, 255, 0.22); }
+    .btn-action svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-action:hover { background: rgba(255, 255, 255, 0.2); }
     .btn-action.btn-reaim:hover { stroke: #ffd043; }
     .btn-action.btn-focus:hover { stroke: #2fa84f; }
     .btn-action.btn-archive:hover { stroke: #ff4757; }
     .btn-action.btn-restore:hover { stroke: #32d7ff; }
     .btn-action.btn-delete:hover { stroke: #ff3838; }
 
-    /* ================= ВЕРХНЯ ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ (П. 7.3 / АРМ-ЗРВ) ================= */
-    .target-top-bar {
-      position: absolute; top: calc(36px + env(safe-area-inset-top)); left: 50%;
-      transform: translateX(-50%);
-      background: rgba(54, 62, 74, 0.96); border: 1px solid #707b8c; border-radius: 5px;
-      color: #fff; display: none; align-items: center; gap: 3px; padding: 3px 5px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.5); z-index: 1150;
-      font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; font-weight: 700;
-      max-width: 96vw; overflow-x: auto;
-    }
-    .top-bar-cell {
-      background: rgba(255,255,255,0.12); padding: 3px 6px; border-radius: 3px;
-      border: 1px solid rgba(255,255,255,0.15); white-space: nowrap;
-    }
-    .top-bar-btn {
-      width: 25px; height: 24px; border: 1px solid #677282; border-radius: 3px;
-      background: #4b5463; color: #fff; display: flex; align-items: center;
-      justify-content: center; cursor: pointer; padding: 0; flex-shrink: 0;
-    }
-    .top-bar-btn:hover { background: #647082; }
-    .top-bar-btn.active { background: #2fa84f; border-color: #1e7e34; }
-    .top-bar-btn.cv-active { background: #d91b2b; border-color: #ff6b78; }
-    .top-bar-btn.forbid-active { background: #1e7e34; border-color: #63e685; }
-    .top-bar-btn svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
-
-    /* ================= ПРАВА ПАНЕЛЬ ІНСТРУМЕНТІВ ================= */
+    /* ================= ПРАВА ПАНЕЛЬ УПРАВЛІННЯ ================= */
     .right-toolbar {
       position: absolute;
       right: calc(8px + env(safe-area-inset-right));
-      bottom: calc(28px + env(safe-area-inset-bottom));
+      bottom: calc(10px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -182,80 +182,63 @@
       z-index: 1000;
     }
     .toolbar-group-split { display: flex; gap: 4px; }
-
     .tool-btn {
       width: 32px; height: 32px;
       background: #ffffff; border: 1px solid #9ea8b6; border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.28);
       display: flex; justify-content: center; align-items: center;
       cursor: pointer; color: #242c38; transition: all 0.12s ease; padding: 0;
-      font-weight: 800; font-size: 11px;
+      font-size: 11px; font-weight: 800;
     }
-    .tool-btn:hover { background: #f0f3f7; transform: scale(1.04); }
+    .tool-btn:hover { background: #f0f3f7; transform: scale(1.05); }
     .tool-btn:active { background: #dde2e8; transform: scale(0.95); }
     .tool-btn svg {
       width: 16px; height: 16px; fill: none; stroke: currentColor;
       stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round;
     }
     .tool-btn.btn-active { background: #2fa84f; color: #fff; border-color: #1e7e34; }
-    .tool-btn.btn-warn { background: #f5a623; color: #1a2029; border-color: #c27d0e; }
-    .tool-btn.btn-danger { background: #d91b2b; color: #fff; border-color: #93101c; }
+    .tool-btn.btn-warn { background: #f5a623; color: #fff; border-color: #c27d0e; }
 
-    /* Кругла кнопка підключення та лічильник активних цілей (п. 5.1) */
     .status-conn-btn {
       width: 34px; height: 34px; border-radius: 50%;
       background: #2fa84f; color: #fff; border: 2px solid #fff;
       display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 11px; cursor: pointer;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.38); transition: 0.2s;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35); transition: 0.2s;
     }
     .status-conn-btn.disconnected { background: #d91b2b; }
 
-    /* ================= НИЖНЯ СМУГА СТАТУСУ (ЯК В АРМ-ЗРВ / ВІРАЖ-ППО, РИС. 1.1) ================= */
-    .bottom-status-bar {
-      position: absolute; bottom: 0; left: 0; width: 100%;
-      padding: 3px 10px calc(3px + env(safe-area-inset-bottom));
-      background: rgba(22, 27, 35, 0.92);
-      border-top: 1px solid #38414f;
-      color: #b8c2d0; font-family: ui-monospace, Consolas, monospace; font-size: 10.5px;
-      display: flex; justify-content: space-between; align-items: center; gap: 8px;
-      z-index: 950; pointer-events: none;
-    }
-    .status-bar-group { display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; }
-    .conn-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #2fa84f; margin-right: 4px; }
-    .conn-dot.off { background: #d91b2b; }
-
-    /* ================= МАРКЕРИ ТА ФОРМУЛЯРИ «ВІРАЖ-ППО» (П. 1, С. 6; П. 13) ================= */
-    .virazh-marker-wrap { position: relative; width: 36px; height: 36px; pointer-events: auto; }
+    /* ================= МАРКЕРИ ТА ФОРМУЛЯРИ (П. 1, П. 10, П. 13) ================= */
+    .virazh-marker-wrap { position: relative; width: 34px; height: 34px; pointer-events: auto; }
     .virazh-symbol-box {
-      width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
-      transition: transform 0.5s linear; transform-origin: center center;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.6s linear; transform-origin: center center;
     }
     .virazh-symbol-svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.85)); }
 
-    /* Кола та тактичні індикатори навколо цілі */
     .speed-circle {
-      position: absolute; top: -4px; left: -4px; width: 42px; height: 42px;
+      position: absolute; top: -5px; left: -5px; width: 42px; height: 42px;
       border: 2px solid #d91b2b; border-radius: 50%; pointer-events: none;
     }
     .selected-circle {
-      position: absolute; top: -6px; left: -6px; width: 46px; height: 46px;
+      position: absolute; top: -6px; left: -6px; width: 44px; height: 44px;
       border: 2px dashed #2fa84f; border-radius: 50%; pointer-events: none;
     }
-    /* Мішень цілевказівки (Рис. 13.1) */
-    .cv-target-reticle {
-      position: absolute; top: -9px; left: -9px; width: 52px; height: 52px;
+
+    /* Маркер ЦВ (мішень навколо цілі — п. 13, рис. 13.1) */
+    .cv-target-ring {
+      position: absolute; top: -9px; left: -9px; width: 50px; height: 50px;
       pointer-events: none;
     }
-    /* Зелений шестикутник заборони стрільби (Рис. 13.2) */
-    .forbid-hex-wrap {
-      position: absolute; top: -9px; left: -9px; width: 52px; height: 52px;
+    /* Маркер Заборони роботи (зелений шестикутник — п. 13, рис. 13.2) */
+    .zabor-hex-ring {
+      position: absolute; top: -9px; left: -9px; width: 50px; height: 50px;
       pointer-events: none;
     }
 
-    /* Смуга статусу затримки під маркером (3 сегменти) */
+    /* Смуга статусу зникнення під маркером (3 сегменти) */
     .status-bar-box {
-      position: absolute; bottom: -5px; left: 4px; width: 26px; height: 3.5px;
+      position: absolute; bottom: -5px; left: 3px; width: 26px; height: 3.5px;
       display: flex; gap: 1.5px;
     }
     .status-segment { flex: 1; height: 100%; border-radius: 1px; background: #2fa84f; }
@@ -263,32 +246,47 @@
     .status-segment.lost { background: #d91b2b; }
     .status-segment.dim { background: rgba(120,120,120,0.35); }
 
-    /* Формуляр цілі (4 режими: 0, 1, 2, п) */
+    /* Формуляр цілі (режими 0, 1, 2, 3 — п. 1, стор. 6) */
     .virazh-formular {
-      position: absolute; top: -4px; left: 37px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      position: absolute; top: -4px; left: 36px;
+      font-family: ui-monospace, Consolas, "Segoe UI", sans-serif;
       font-size: 11px; font-weight: 700; line-height: 1.15;
       white-space: nowrap; pointer-events: none;
       text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
     }
     .formular-pp { color: #ff3b4b; }
-    .formular-zl { color: #4aa3ff; }
-    .formular-nv { color: #d5dce4; }
-    .formular-type { font-size: 10px; font-weight: 800; color: #fff; }
-    .formular-cmd-tag { font-size: 9.5px; font-weight: 800; background: rgba(217,27,43,0.85); color: #fff; padding: 0 3px; border-radius: 2px; display: inline-block; }
-    .formular-forbid-tag { font-size: 9.5px; font-weight: 800; background: rgba(47,168,79,0.9); color: #fff; padding: 0 3px; border-radius: 2px; display: inline-block; }
+    .formular-zl { color: #54a8ff; }
+    .formular-nv { color: #e2e8f0; }
+    .formular-type { font-size: 10px; font-weight: 800; color: #ffe066; }
 
-    /* Позначка позиції свого підрозділу (МВГ / ПЗРК, рис. 5.2, 11.8) */
-    .unit-marker-wrap { position: relative; width: 44px; height: 34px; pointer-events: auto; }
-    .unit-label {
-      position: absolute; top: -2px; left: 46px;
-      font-size: 10.5px; font-weight: 800; color: #0b4fa8;
-      background: rgba(255,255,255,0.82); padding: 1px 5px; border-radius: 3px;
-      border: 1px solid #0b62d4; white-space: nowrap; pointer-events: none;
+    /* Тактичний знак підрозділу (Опорна точка / МВГ — п. 5, рис. 5.2, п. 11, рис. 11.8) */
+    .unit-marker-wrap { position: relative; width: 42px; height: 32px; pointer-events: auto; }
+    .unit-box {
+      width: 38px; height: 24px; background: rgba(120, 200, 255, 0.88);
+      border: 2px solid #0b4fa8; border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
     }
-    body.radar-active .unit-label { background: rgba(20,26,34,0.88); color: #69b1ff; }
+    .unit-dot {
+      position: absolute; width: 5px; height: 5px; border-radius: 1px;
+    }
+    .unit-dot.tl { top: -3px; left: -3px; }
+    .unit-dot.tr { top: -3px; right: 1px; }
+    .unit-dot.bl { bottom: 5px; left: -3px; }
+    .unit-dot.br { bottom: 5px; right: 1px; }
+    .unit-dot.online { background: #0b62d4; }
+    .unit-dot.warn { background: #d91b2b; }
+    .unit-dot.offline { display: none; }
+    .unit-label {
+      position: absolute; top: -2px; left: 42px; white-space: nowrap;
+      font-size: 10px; font-weight: 800; color: #111827;
+      background: rgba(255,255,255,0.82); padding: 1px 4px; border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.2); pointer-events: none;
+    }
+    body.radar-active .unit-label {
+      background: rgba(20,26,34,0.85); color: #93c5fd; border-color: #3b82f6;
+    }
 
-    /* Плавні траєкторії */
     .trail-line { stroke-linecap: round !important; stroke-linejoin: round !important; }
     .trail-lost { stroke-linecap: round !important; stroke-linejoin: round !important; stroke-dasharray: 4, 6; }
 
@@ -297,13 +295,27 @@
       filter: invert(90%) hue-rotate(180deg) brightness(90%) contrast(105%) grayscale(25%);
     }
 
+    /* ================= КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ (П. 10, РИС. 10.3) ================= */
+    .context-menu {
+      position: absolute; background: #ffffff; border: 1px solid #cbd5e1;
+      border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      z-index: 2500; display: none; flex-direction: column; min-width: 195px;
+      overflow: hidden; font-size: 12px; font-weight: 600; color: #1e293b;
+    }
+    .context-item {
+      padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .context-item:last-child { border-bottom: none; }
+    .context-item:hover { background: #e2e8f0; }
+
     /* ================= МОДАЛЬНІ ВІКНА ================= */
     .virazh-modal {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: #ffffff; border-radius: 12px; color: #1e242d;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.5); z-index: 2000;
+      box-shadow: 0 16px 45px rgba(0,0,0,0.45); z-index: 2000;
       display: none; flex-direction: column; padding: 18px;
-      width: min(410px, 93vw); max-height: 85vh; overflow-y: auto;
+      width: min(400px, 93vw); max-height: 86vh; overflow-y: auto;
     }
     .modal-head {
       display: flex; justify-content: space-between; align-items: center;
@@ -312,77 +324,56 @@
     .modal-head h3 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #1a232f; }
     .modal-close { font-size: 18px; color: #8a94a6; cursor: pointer; font-weight: bold; }
     .modal-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-    .modal-row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-    .modal-row label { font-size: 10.5px; font-weight: 700; color: #536074; text-transform: uppercase; }
+    .modal-row label { font-size: 11px; font-weight: 700; color: #536074; text-transform: uppercase; }
     .modal-row input, .modal-row select {
-      padding: 7px 9px; border: 1px solid #ced4de; border-radius: 6px;
-      font-size: 12.5px; font-weight: 600; color: #1a222c; outline: none; width: 100%;
+      padding: 8px 10px; border: 1px solid #ced4de; border-radius: 6px;
+      font-size: 13px; font-weight: 600; color: #1a222c; outline: none;
     }
     .modal-row input:focus, .modal-row select:focus { border-color: #0b62d4; box-shadow: 0 0 0 2px rgba(11,98,212,0.18); }
-    .modal-check {
-      display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600;
-      padding: 5px 0; cursor: pointer; color: #243040;
-    }
     .modal-actions { display: flex; gap: 8px; margin-top: 10px; }
     .btn-v {
-      flex: 1; padding: 9px; border-radius: 7px; border: none;
-      font-weight: 700; font-size: 11.5px; cursor: pointer; text-align: center; text-transform: uppercase;
+      flex: 1; padding: 10px; border-radius: 7px; border: none;
+      font-weight: 700; font-size: 12px; cursor: pointer; text-align: center; text-transform: uppercase;
     }
     .btn-v-primary { background: #0b62d4; color: #fff; }
     .btn-v-primary:hover { background: #084aa3; }
     .btn-v-secondary { background: #eef2f6; color: #414d5f; }
-    .btn-v-danger { background: #d91b2b; color: #fff; }
 
-    /* Сітка команд ВКП (Рис. 13.3) */
-    .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 8px 0; }
-    .cmd-chip-btn {
-      padding: 9px 8px; border-radius: 6px; border: 1px solid #cfd6e0;
-      background: #f4f7fa; font-weight: 700; font-size: 12px; color: #1e2733;
-      cursor: pointer; text-align: center; transition: 0.15s;
-    }
-    .cmd-chip-btn:hover { background: #e3ebf5; border-color: #0b62d4; }
-    .cmd-chip-btn.danger { background: #fdebed; border-color: #f3b7bd; color: #b51422; }
-    .cmd-chip-btn.success { background: #eaf8ee; border-color: #a9e3ba; color: #196e31; }
-
-    /* Радіо-групи для вікна ПВС */
-    .pvs-radio-group { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+    .pvs-radio-group { display: flex; flex-wrap: wrap; gap: 6px; margin: 3px 0 6px; }
     .pvs-radio-chip {
-      display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600;
+      display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600;
       background: #f1f4f8; padding: 5px 9px; border-radius: 16px; cursor: pointer;
     }
 
-    /* Лог подій */
-    .event-log-box {
-      background: #141920; color: #cbd5e1; font-family: ui-monospace, Consolas, monospace;
-      font-size: 11px; padding: 8px; border-radius: 6px; max-height: 240px; overflow-y: auto;
-      line-height: 1.45;
+    /* Сітка команд готовності (п. 13, рис. 13.3) */
+    .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 6px 0; }
+    .cmd-btn {
+      padding: 9px 8px; border-radius: 6px; border: 1px solid #cbd5e1;
+      background: #f8fafc; font-weight: 800; font-size: 12px; color: #1e293b;
+      cursor: pointer; transition: 0.15s;
     }
-    .log-entry { border-bottom: 1px solid rgba(255,255,255,0.07); padding: 3px 0; }
-    .log-time { color: #5cdb7a; margin-right: 5px; }
+    .cmd-btn:hover { background: #e2e8f0; }
+    .cmd-btn.cmd-danger { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+    .cmd-btn.cmd-ok { background: #dcfce7; border-color: #86efac; color: #15803d; }
 
-    /* Підказка HUD */
     .hud-hint {
       position: absolute; top: calc(74px + env(safe-area-inset-top)); left: 50%;
       transform: translateX(-50%); background: rgba(18, 23, 31, 0.94);
-      color: #fff; padding: 7px 16px; border-radius: 20px; font-size: 11.5px;
-      font-weight: 700; z-index: 1300; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+      color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 12px;
+      font-weight: 700; z-index: 1300; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       pointer-events: none; border: 1px solid rgba(255,255,255,0.25); text-align: center;
-      max-width: 90vw;
     }
   </style>
 </head>
 <body>
 
-<!-- ВОДЯНИЙ ЗНАК (IP-АДРЕСА В HEX, п. 5.3) -->
+<!-- ВОДЯНИЙ ЗНАК (HEX IP) -->
 <div class="watermark-overlay" id="watermarkLayer"></div>
 
-<!-- ВЕРХНЯ ПАНЕЛЬ: СПИСОК ЦІЛЕЙ, СТАТУС ВКП ТА ГОДИННИК -->
+<!-- ВЕРХНЯ ЗГОРТАНА ПАНЕЛЬ: СПИСОК ЦІЛЕЙ ТА ГОДИННИК -->
 <div class="top-panel" id="mainTopPanel">
-  <div class="panel-header" onclick="toggleTopPanel(event)">
-    <div class="panel-toggle" id="panelToggleLabel">▼ СПИСОК ЦІЛЕЙ (ЗГОРНУТИ)</div>
-    <div id="vkpCommandPill" class="vkp-status-pill" title="Команди готовності та оповіщення від ВКП (п. 13)" onclick="event.stopPropagation(); openVkpCmdModal();">
-      ВКП: ЧЕРГУВАННЯ
-    </div>
+  <div class="panel-header" onclick="toggleTopPanel()">
+    <div class="panel-toggle">▼ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (ЗГОРНУТИ)</div>
     <div id="clock" class="clock">00:00:00</div>
   </div>
   <div class="table-container">
@@ -393,7 +384,7 @@
       </colgroup>
       <thead>
         <tr>
-          <th>№ / Статус</th><th>Належн.</th><th>РДЦ (Тип)</th><th>H (гм) / V</th><th>Курс</th><th class="td-actions">Команди</th>
+          <th>№ / Статус</th><th>Належність</th><th>РДЦ (Тип)</th><th>H (гм) / V</th><th>Курс</th><th class="td-actions">Команди</th>
         </tr>
       </thead>
       <tbody id="targetsTableBody"></tbody>
@@ -401,125 +392,115 @@
   </div>
 </div>
 
-<!-- ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ (П. 7.3) -->
+<!-- ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ + КОМАНДИ ЦВ / ЗАБОРОНА (П. 7.3, П. 13) -->
 <div id="targetTopBar" class="target-top-bar">
   <div class="top-bar-cell" id="topBarId">---</div>
-  <div class="top-bar-cell" id="topBarAzimuth" title="Азимут від позиції підрозділу">A0°</div>
-  <div class="top-bar-cell" id="topBarDistance" title="Дальність від позиції підрозділу">D0 км</div>
+  <div class="top-bar-cell" id="topBarAzimuth" title="Азимут від опорної точки підрозділу">A0°</div>
+  <div class="top-bar-cell" id="topBarDistance" title="Дальність від опорної точки підрозділу">D0 км</div>
   <div class="top-bar-cell" id="topBarHeight" title="Висота в гектометрах">H0.0</div>
   <div class="top-bar-cell" id="topBarSpeed" title="Швидкість км/год">V0</div>
-  <div class="top-bar-cell" id="topBarQty" title="Кількісний склад">1</div>
-  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;" title="Підлітний час до позиції">ETA --:--</div>
-  <button class="top-bar-btn" title="Змінити вектор польоту (Reaim)" onclick="reaimCurrentTarget()">
-    <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21" fill="currentColor" stroke="none"/></svg>
-  </button>
-  <button class="top-bar-btn" id="btnCvTop" title="Цілевказівка (ЦВ) по цілі (п. 13)" onclick="toggleTargetCv()">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-  </button>
-  <button class="top-bar-btn" id="btnForbidTop" title="Заборона роботи по цілі (п. 13)" onclick="toggleTargetForbid()">
-    <svg viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7"/></svg>
+  <div class="top-bar-cell" id="topBarEta" style="color: #ffd043;" title="Час / підльотний час до ОТ">00:00 (0хв)</div>
+  <button class="top-bar-btn" id="btnTargetCv" title="Цілевказівка на ціль (ЦВ — п. 13)" onclick="toggleTargetCv()">ЦВ</button>
+  <button class="top-bar-btn" id="btnTargetZabor" title="Заборона роботи по цілі (Забор. — п. 13)" onclick="toggleTargetZabor()">Забор.</button>
+  <button class="top-bar-btn" title="Змінити вектор польоту (Reaim) — 1 клік" onclick="reaimCurrentTarget()">
+    <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
   </button>
   <button class="top-bar-btn" id="btnExtrapolateTop" title="Екстраполяція положення (коло)" onclick="toggleCurrentExtrapolation()">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg>
   </button>
-  <button class="top-bar-btn" title="Зняти вибір" onclick="deselectTarget()">
-    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  <button class="top-bar-btn" title="Закрити панель (зняти вибір)" onclick="deselectTarget()">
+    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5"/></svg>
   </button>
+</div>
+
+<!-- ІНДИКАТОР ГОТОВНОСТІ ПІДРОЗДІЛУ ТА ПЕЛЕНГАТОРА A-D -->
+<div class="readiness-banner" onclick="openCommandsModal()" title="Натисніть для відкриття панелі команд готовності (п. 13)">
+  <div class="readiness-row">
+    <span class="readiness-dot" id="readinessDot"></span>
+    <span id="readinessText">ГОТОВНІСТЬ-2 | ШТИЛЬ</span>
+  </div>
+  <div style="font-size: 10px; color: #9aa3b2;" id="unitCoordsLabel">ОТ: 47.84°N 35.14°E (R=180 км)</div>
+  <div class="ad-readout" id="adReadout">A-D: A 0° | D 0.0 км</div>
 </div>
 
 <div id="hudHint" class="hud-hint">Очікування команд...</div>
 
-<!-- МОДАЛЬНЕ ВІКНО: ВВЕДЕННЯ / РЕДАГУВАННЯ ЦІЛІ (РДЦ) -->
+<!-- КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ ЦІЛІ (П. 10, РИС. 10.3) -->
+<div id="targetContextMenu" class="context-menu">
+  <div class="context-item" onclick="setContextRecognition('ЗЛ', null)">🔵 свій</div>
+  <div class="context-item" onclick="setContextRecognition('ПП', null)">🔴 чужий (пов. противник)</div>
+  <div class="context-item" onclick="setContextRecognition('ЗЛ', 'БпЛА ЗСУ')">🔵 свій БПЛА</div>
+  <div class="context-item" onclick="setContextRecognition('ПП', 'Ударний дрон')">🔴 чужий БПЛА</div>
+  <div class="context-item" onclick="setContextRecognition('ЗЛ', 'Винищувач ЗСУ')">🔵 свій винищувач</div>
+  <div class="context-item" onclick="setContextRecognition('НВ', 'РЛС')">⚪ скинути розпізнавання</div>
+</div>
+
+<!-- МОДАЛЬНЕ ВІКНО: ВВЕДЕННЯ ЦІЛІ (РДЦ) -->
 <div id="targetModal" class="virazh-modal">
   <div class="modal-head">
     <h3>Введення повітряної цілі (РДЦ)</h3>
     <span class="modal-close" onclick="closeModal('targetModal')">✕</span>
   </div>
-  
-  <div class="modal-row-inline">
-    <div class="modal-row">
-      <label>🆔 Номер цілі (№ РТВ)</label>
-      <input type="text" id="modalId" placeholder="АВТО (напр. 0243)">
-    </div>
-    <div class="modal-row">
-      <label>Кількісний склад</label>
-      <input type="number" id="modalQty" value="1" min="1" max="50">
-    </div>
-  </div>
-
   <div class="modal-row">
-    <label>Індекс належності (п. 1, 7.1)</label>
+    <label>🆔 Бортовий номер цілі (№ РТВ)</label>
+    <input type="text" id="modalId" placeholder="АВТО (напр. 0243)">
+  </div>
+  <div class="modal-row">
+    <label>Індекс належності</label>
     <select id="modalAffiliation">
       <option value="ПП">ПП — Повітряний противник (Червоний)</option>
-      <option value="ЗЛ">ЗЛ / СВ — Свій літальний апарат (Синій)</option>
-      <option value="НВ">НВ — Невизначений / Без опізнавання (Чорний)</option>
+      <option value="ЗЛ">ЗЛ — Свій літальний апарат (Синій)</option>
+      <option value="НВ">НВ — Невизначений / ASTERIX (Чорний)</option>
     </select>
   </div>
-
   <div class="modal-row">
     <label>🛩️ Розвідувальні дані цілі (РДЦ)</label>
     <select id="modalType">
-      <option value="Ударний дрон">Ударний дрон (Shahed-136 / Герань)</option>
-      <option value="Supercam">Розвідувальний БпЛА (Supercam / Орлан)</option>
+      <option value="Ударний дрон">Ударний дрон (Shahed-136/Герань)</option>
+      <option value="Supercam">Розвідувальний БпЛА (Supercam/Орлан)</option>
       <option value="КАБ">КАБ — керована авіаційна бомба</option>
-      <option value="Крилата ракета">Крилата ракета (Х-101 / Калібр)</option>
+      <option value="Крилата ракета">Крилата ракета (КР)</option>
       <option value="Су-34">Су-34 — винищувач-бомбардувальник</option>
       <option value="Су-35">Су-35 — винищувач</option>
-      <option value="Баллістична ракета">Баллістична ракета (Іскандер-М / Кинджал)</option>
-      <option value="РЛС">РЛС-відмітка (35Д6М / П-18)</option>
-      <option value="ASTERIX">ASTERIX Cat.62 (RADA RPS-42/82)</option>
+      <option value="Балістична ракета">Балістична ракета (Кинджал/Іскандер)</option>
+      <option value="РЛС">РЛС-відмітка (без розпізнавання)</option>
+      <option value="ASTERIX">ASTERIX / RADA (первинна відмітка)</option>
     </select>
   </div>
-
-  <div class="modal-row-inline">
-    <div class="modal-row">
-      <label>Висота H (гм, 1 гм = 100 м)</label>
-      <input type="number" id="modalHeight" value="15" min="0" max="300">
-    </div>
-    <div class="modal-row">
-      <label>Спосіб видачі (п. 1)</label>
-      <select id="modalEntryMode">
-        <option value="а">(а) Автоматичний з РЛС</option>
-        <option value="р">(р) Ручний / Оператор</option>
-      </select>
-    </div>
+  <div class="modal-row">
+    <label>Висота цілі H (гектометри, 1 гм = 100 м)</label>
+    <input type="number" id="modalHeight" value="15" placeholder="15 = 1500 м">
   </div>
-
   <div class="modal-row">
     <label>Джерело інформації</label>
     <select id="modalSource">
-      <option value="РЛС">РЛС радіотехнічних військ (РТВ)</option>
-      <option value="ПВС">Пост візуального спостереження (ПВС)</option>
-      <option value="еРакета">Акустична система «еРакета» / «Звук»</option>
-      <option value="єППО">Система спостереження «єППО»</option>
-      <option value="ASTERIX">Протокол ASTERIX (RADA)</option>
-      <option value="Графіт">ІКС «Графіт» (РЕР)</option>
+      <option value="РЛС">РЛС (35Д6М / П-18)</option>
+      <option value="ПВС">ПВС (Пост візуального спостереження)</option>
+      <option value="еРакета">Акустична система «еРакета»</option>
+      <option value="ASTERIX">Протокол ASTERIX кат. 62 (RADA)</option>
     </select>
   </div>
-
   <div class="modal-actions">
     <button class="btn-v btn-v-secondary" onclick="closeModal('targetModal')">Скасувати</button>
     <button class="btn-v btn-v-primary" onclick="confirmAddTarget()">Вказати точку на карті</button>
   </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО: ДОПОВІДЬ ПВС (П. 5, П. 14) -->
+<!-- МОДАЛЬНЕ ВІКНО: ДОПОВІДЬ ПВС -->
 <div id="pvsModal" class="virazh-modal">
   <div class="modal-head">
     <h3>Доповідь про виявлену ціль (ПВС)</h3>
     <span class="modal-close" onclick="closeModal('pvsModal')">✕</span>
   </div>
-  
   <div class="modal-row">
     <label>Тип цілі</label>
     <div class="pvs-radio-group">
-      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Крилата ракета"> КР</label>
-      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Ударний дрон" checked> БпЛА</label>
-      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Су-34"> Літак</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="КР"> КР</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="БпЛА" checked> БпЛА</label>
+      <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Літак"> Літак</label>
       <label class="pvs-radio-chip"><input type="radio" name="pvsType" value="Вертоліт"> Вертоліт</label>
     </div>
   </div>
-
   <div class="modal-row">
     <label>Спосіб виявлення</label>
     <div class="pvs-radio-group">
@@ -528,48 +509,62 @@
       <label class="pvs-radio-chip"><input type="radio" name="pvsDet" value="Акуст+Віз"> Акуст+Віз</label>
     </div>
   </div>
-
-  <div class="modal-row-inline">
-    <div class="modal-row">
-      <label>Курс цілі (0–360°)</label>
-      <input type="number" id="pvsCourse" value="180" min="0" max="360">
-    </div>
-    <div class="modal-row">
-      <label>Висота H (гм)</label>
-      <input type="number" id="pvsHeight" value="3" min="0" max="150">
-    </div>
+  <div class="modal-row">
+    <label>Курс цілі (0–360°)</label>
+    <input type="number" id="pvsCourse" value="180" min="0" max="360">
   </div>
-
   <div class="modal-actions">
     <button class="btn-v btn-v-secondary" onclick="closeModal('pvsModal')">Скасувати</button>
-    <button class="btn-v btn-v-primary" onclick="submitPvsReport()">Доповісти (в центр/точку)</button>
+    <button class="btn-v btn-v-primary" onclick="submitPvsReport()">Доповісти</button>
   </div>
 </div>
 
-<!-- МОДАЛЬНЕ ВІКНО: НАЛАШТУВАННЯ ТА ФІЛЬТРИ (П. 2, 5, 11) -->
+<!-- МОДАЛЬНЕ ВІКНО: КОМАНДИ ГОТОВНОСТІ ТА ОПОВІЩЕННЯ (П. 13, РИС. 13.3) -->
+<div id="commandsModal" class="virazh-modal">
+  <div class="modal-head">
+    <h3>Команди готовності та оповіщення (п. 13)</h3>
+    <span class="modal-close" onclick="closeModal('commandsModal')">✕</span>
+  </div>
+  <div style="font-size: 11px; color: #536074; margin-bottom: 6px;">
+    Встановлення режиму бойової роботи підрозділу МВГ / ЗРВ:
+  </div>
+  <div class="cmd-grid">
+    <button class="cmd-btn cmd-danger" onclick="setReadinessCmd('ГОТОВНІСТЬ-1', 'alert')">Готовність-1</button>
+    <button class="cmd-btn" onclick="setReadinessCmd('ШТИЛЬ', 'ok')">Штиль</button>
+    <button class="cmd-btn cmd-warn" onclick="setReadinessCmd('ГОТОВНІСТЬ-2', 'warn')">Готовність-2</button>
+    <button class="cmd-btn cmd-danger" onclick="setReadinessCmd('ГРОЗА', 'alert')">Гроза</button>
+    <button class="cmd-btn cmd-danger" onclick="setReadinessCmd('АРБА 1515', 'alert')">Арба 1515</button>
+    <button class="cmd-btn cmd-danger" onclick="setReadinessCmd('РАКЕТНА НЕБЕЗПЕКА', 'alert')">Ракетна небезпека</button>
+    <button class="cmd-btn cmd-ok" onclick="setReadinessCmd('СПОЧИНЬ 7373', 'ok')">Спочинь 7373</button>
+    <button class="cmd-btn cmd-ok" onclick="setReadinessCmd('ВІДБІЙ РН', 'ok')">Відбій РН</button>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-v btn-v-primary" onclick="closeModal('commandsModal')">Закрити</button>
+  </div>
+</div>
+
+<!-- МОДАЛЬНЕ ВІКНО: ОПОРНА ТОЧКА ПІДРОЗДІЛУ ТА НАЛАШТУВАННЯ (П. 5, 11, 12) -->
 <div id="settingsModal" class="virazh-modal">
   <div class="modal-head">
-    <h3>Налаштування АРМ «Віраж-ППО»</h3>
+    <h3>Налаштування АРМ та Опорної Точки</h3>
     <span class="modal-close" onclick="closeModal('settingsModal')">✕</span>
   </div>
-
-  <div class="modal-row-inline">
-    <div class="modal-row">
-      <label>Позивний підрозділу (МВГ)</label>
-      <input type="text" id="unitCallsignInput" value="1 мвг «Скіф»" onchange="updateUnitSettings()">
-    </div>
-    <div class="modal-row">
-      <label>Радіус прийому R, км (п. 2, 5)</label>
-      <input type="number" id="unitRadiusInput" value="120" min="0" max="500" onchange="updateUnitSettings()">
-    </div>
-  </div>
-
   <div class="modal-row">
-    <button class="btn-v btn-v-secondary" onclick="closeModal('settingsModal'); startMoveUnitPosition();">
-      📍 Змінити опорну точку позиції на карті (п. 11)
-    </button>
+    <label>Умовна назва підрозділу (п. 11 — без дійсних назв!)</label>
+    <input type="text" id="unitNameInput" value="1 п.г. ПЗРК (Опорна точка)">
   </div>
-
+  <div class="modal-row">
+    <label>Радіус зони обмеження відображення R, км (п. 2, 5)</label>
+    <input type="number" id="unitRadiusInput" value="180" min="10" max="500">
+  </div>
+  <div class="modal-row">
+    <label>Статус зв'язку з ВКП (п. 5, рис. 5.2)</label>
+    <select id="unitStatusSelect">
+      <option value="online">Активний обмін (сині індикатори)</option>
+      <option value="warn">Затримка відповіді (червоні індикатори)</option>
+      <option value="offline">Немає відповіді (без індикаторів)</option>
+    </select>
+  </div>
   <div class="modal-row">
     <label>Швидкість тактичної симуляції</label>
     <select id="simSpeedSelect" onchange="changeSimSpeed(this.value)">
@@ -578,119 +573,1181 @@
       <option value="10">10x (Прискорений тренінг)</option>
     </select>
   </div>
-
-  <div class="modal-row">
-    <label>Фільтри відображення від АРМ-ЗРВ (п. 5, рис. 5.6–5.8)</label>
-    <label class="modal-check"><input type="checkbox" id="filterOnlyPP" onchange="render()"> Тільки повітряний противник («тільки ПП»)</label>
-    <label class="modal-check"><input type="checkbox" id="filterIdentifiedOnly" onchange="render()"> Передавати тільки цілі з опізнаванням (блокувати ASTERIX НВ)</label>
-    <label class="modal-check"><input type="checkbox" id="showKtaToggle" checked onchange="toggleKtaLayer()"> Відображати координатні точки автомата (КТА)</label>
-    <label class="modal-check"><input type="checkbox" id="showRangeCircleToggle" checked onchange="updateUnitGraphics()"> Відображати зону прийому R (км) навколо МВГ</label>
-  </div>
-
-  <div style="font-size: 10.5px; color: #637082; margin: 6px 0; border-top: 1px solid #e1e5eb; padding-top: 8px; font-family: monospace;">
-    Версія: СПЗ «Віраж-Планшет» / В-ППО 1.7.2 (Тип ПО: 71kngv)<br>
-    Шифрування: AES-256 (Увімкнено) | Порт TCP/UDP: 1151<br>
-    IP: 10.18.85.226 [HEX: 0a1255e2]
+  <div style="font-size: 11px; color: #727f91; margin: 6px 0; border-top: 1px solid #e1e5eb; padding-top: 8px;">
+    Протокол обміну: AES-256 | Тип ПЗ: 71 (Віраж-ППО)<br>
+    Статична IP: 10.18.85.226 [HEX: 0a1255e2]
   </div>
   <div class="modal-actions">
-    <button class="btn-v btn-v-primary" onclick="closeModal('settingsModal')">Застосувати та закрити</button>
-  </div>
-</div>
-
-<!-- МОДАЛЬНЕ ВІКНО: КОМАНДИ ВІД ВКП АРМ-ЗРВ (П. 13, РИС. 13.3) -->
-<div id="vkpCmdModal" class="virazh-modal">
-  <div class="modal-head">
-    <h3>Команди готовності та оповіщення ВКП (п. 13)</h3>
-    <span class="modal-close" onclick="closeModal('vkpCmdModal')">✕</span>
-  </div>
-  <div style="font-size: 11.5px; color: #536074; margin-bottom: 6px;">
-    Імітація прийому команди з АРМ-ЗРВ (форма «Видача команд на активних абонентів Віраж-ППО»):
-  </div>
-  <div class="cmd-grid">
-    <button class="cmd-chip-btn danger" onclick="setVkpCommand('ГОТОВНІСТЬ-1', 'alert-g1')">Готовність-1</button>
-    <button class="cmd-chip-btn" onclick="setVkpCommand('ГОТОВНІСТЬ-2', 'alert-g2')">Готовність-2</button>
-    <button class="cmd-chip-btn danger" onclick="setVkpCommand('РАКЕТНА НЕБЕЗПЕКА', 'alert-rn')">Ракетна небезпека</button>
-    <button class="cmd-chip-btn success" onclick="setVkpCommand('ВІДБІЙ РН', 'alert-ok')">Відбій РН</button>
-    <button class="cmd-chip-btn" onclick="setVkpCommand('ГРОЗА', 'alert-g2')">Гроза</button>
-    <button class="cmd-chip-btn success" onclick="setVkpCommand('ШТИЛЬ', 'alert-ok')">Штиль</button>
-    <button class="cmd-chip-btn" onclick="setVkpCommand('АРБА 1515', 'alert-g2')">Арба 1515</button>
-    <button class="cmd-chip-btn" onclick="setVkpCommand('СПОЧИНЬ 7373', '')">Спочинь 7373</button>
-  </div>
-  <div class="modal-actions">
-    <button class="btn-v btn-v-secondary" onclick="closeModal('vkpCmdModal')">Закрити</button>
-  </div>
-</div>
-
-<!-- МОДАЛЬНЕ ВІКНО: ЖУРНАЛ ПОДІЙ «ПОДІЇ» (П. 1, С. 7) -->
-<div id="eventsModal" class="virazh-modal">
-  <div class="modal-head">
-    <h3>Журнал подій та команд («Події»)</h3>
-    <span class="modal-close" onclick="closeModal('eventsModal')">✕</span>
-  </div>
-  <div class="event-log-box" id="eventLogBox"></div>
-  <div class="modal-actions">
-    <button class="btn-v btn-v-secondary" onclick="clearEventLog()">Очистити</button>
-    <button class="btn-v btn-v-primary" onclick="closeModal('eventsModal')">Закрити</button>
+    <button class="btn-v btn-v-secondary" onclick="startMoveUnit()">Вказати ОТ на карті</button>
+    <button class="btn-v btn-v-primary" onclick="saveUnitSettings()">Зберегти</button>
   </div>
 </div>
 
 <!-- ================= ПРАВА КОМПАКТНА ПАНЕЛЬ ІНСТРУМЕНТІВ ================= -->
 <div class="right-toolbar">
-  <!-- Рядок 1: Симуляція + Режим формуляра (0 / 1 / 2 / п) -->
+  <!-- Рядок 1: Симуляція + Режим формуляра 0/1/2/3 (п. 1, стор. 6) -->
   <div class="toolbar-group-split">
-    <div class="tool-btn" id="btnSim" title="Симуляція руху повітряної обстановки (Play/Pause)" onclick="toggleSimulation()">
-      <svg id="simIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>
+    <div class="tool-btn" id="btnSim" title="Симуляція руху (Play/Pause)" onclick="toggleSimulation()">
+      <svg id="simIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
     </div>
-    <div class="tool-btn" id="btnFormularMode" title="Режим формуляра цілі: п (повний) / 2 / 1 / 0 (п. 1)" onclick="cycleFormularMode()">
-      п
+    <div class="tool-btn" id="btnFormularMode" title="Режим формуляру цілі: 0 / 1 / 2 / 3 (п. 1)" onclick="cycleFormularMode()">
+      Ф:3
     </div>
   </div>
 
-  <!-- Рядок 2: Радар + Пеленгатор A-D від позиції -->
+  <!-- Рядок 2: Радар + Пеленгатор A-D (п. 1, стор. 5) -->
   <div class="toolbar-group-split">
-    <div class="tool-btn" id="btnRadar" title="Темний радар-режим" onclick="toggleRadar()">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M 8 8 A 5 5 0 0 0 8 16 M 16 8 A 5 5 0 0 1 16 16 M 5 5 A 10 10 0 0 0 5 19 M 19 5 A 10 10 0 0 1 19 19"/></svg>
+    <div class="tool-btn" title="Темний радар-режим" onclick="toggleRadar()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M 8 8 A 5 5 0 0 0 8 16 M 16 8 A 5 5 0 0 1 16 16 M 5 5 A 10 10 0 0 0 5 19 M 19 5 A 10 10 0 0 1 19 19"/></svg>
     </div>
-    <div class="tool-btn" id="btnMeasureAD" title="Курсор відносно точок A-D (азимут і дальність, п. 1)" onclick="toggleMeasureMode()">
+    <div class="tool-btn" id="btnAdTool" title="Курсор відносно точки (A-D — п. 1)" onclick="toggleAdTool()">
       A-D
     </div>
   </div>
 
-  <!-- Пошук населеного пункту / цілі -->
-  <div class="tool-btn" title="Пошук населеного пункту або № цілі" onclick="searchLocality()">
+  <!-- Пошук населеного пункту -->
+  <div class="tool-btn" title="Пошук населеного пункту або цілі" onclick="searchLocality()">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
   </div>
 
-  <!-- Звукові повідомлення КХ/УКХ -->
-  <div class="tool-btn" id="btnRadioAudio" title="Звукові сповіщення КХ/УКХ та команд ВКП" onclick="toggleRadioAudio()">
-    <svg viewBox="0 0 24 24"><path d="M4.9 19.1C2.5 16.7 2.5 12.8 4.9 10.4M19.1 19.1c2.4-2.4 2.4-6.3 0-8.7M7.8 16.2c-1.2-1.2-1.2-3.1 0-4.3M16.2 16.2c1.2-1.2 1.2-3.1 0-4.3"/><circle cx="12" cy="14" r="2" fill="currentColor" stroke="none"/></svg>
+  <!-- Звукові повідомлення (Web Speech / Сигнал) -->
+  <div class="tool-btn" id="btnRadioAudio" title="Голосові сповіщення та сигнали КХ/УКХ" onclick="toggleRadioAudio()">
+    <svg viewBox="0 0 24 24"><path d="M4.9 19.1C2.5 16.7 2.5 12.8 4.9 10.4M19.1 19.1c2.4-2.4 2.4-6.3 0-8.7M7.8 16.2c-1.2-1.2-1.2-3.1 0-4.3M16.2 16.2c1.2-1.2 1.2-3.1 0-4.3"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg>
   </div>
 
   <!-- Охопити всі цілі -->
-  <div class="tool-btn" title="Охопити всі цілі та позицію" onclick="fitAllTargets()">
-    <svg viewBox="0 0 24 24"><polyline points="15,3 21,3 21,9"/><polyline points="9,21 3,21 3,15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+  <div class="tool-btn" title="Охопити всі цілі та підрозділ" onclick="fitAllTargets()">
+    <svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="15" y2="15"/><polyline points="15,9 15,15 9,15"/><line x1="19" y1="4" x2="19" y2="20"/></svg>
   </div>
 
-  <!-- Журнал подій «Події» -->
-  <div class="tool-btn" title="Журнал подій «Події» (п. 1)" onclick="openEventsModal()">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+  <!-- Повноекранний режим -->
+  <div class="tool-btn" title="Повноекранний режим" onclick="toggleFullscreen()">
+    <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg>
   </div>
 
-  <!-- ПВС: Доповідь про виявлену ціль (п. 5, 14) -->
+  <!-- ПВС: Доповідь про виявлену ціль -->
   <div class="tool-btn" title="ПВС: Доповідь про виявлену ціль" onclick="openPvsModal()">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
   </div>
 
   <!-- Ввести ціль -->
-  <div class="tool-btn btn-active" title="Ввести повітряну ціль (Клік 1 — точка, Клік 2 — вектор)" onclick="openAddModal()">
+  <div class="tool-btn btn-active" title="Ввести ціль (Клік 1 — точка, Клік 2 — вектор)" onclick="openAddModal()">
     <svg viewBox="0 0 24 24"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
   </div>
 
-  <!-- Очистити неактивні сліди -->
-  <div class="tool-btn" title="Очистити неактивні (архівні) сліди" onclick="clearGhosts()">
+  <!-- Очистити архівні сліди -->
+  <div class="tool-btn" title="Очистити архівні сліди" onclick="clearGhosts()">
     <svg viewBox="0 0 24 24" style="color: #ff3b30;"><path d="M 12 4 A 8 8 0 1 1 4 12" stroke-dasharray="3 3"/><polyline points="12,1 12,4 15,4"/></svg>
   </div>
 
-  <!-- Очистити всю оперативну обстановку -->
-  <div class="tool-btn" title="Очистити всю оперативну обстановку" onclick="clearAll()">
-    <svg viewBox="0 0
+  <!-- Очистити всю обстановку -->
+  <div class="tool-btn" title="Очистити всю повітряну обстановку" onclick="clearAll()">
+    <svg viewBox="0 0 24 24"><path d="M 4 6 L 20 6 M 9 6 V 4 H 15 V 6 M 6 6 L 7 20 A 1 1 0 0 0 8 21 H 16 A 1 1 0 0 0 17 20 L 18 6"/></svg>
+  </div>
+
+  <!-- Кнопка налаштувань та лічильник активних цілей -->
+  <div class="status-conn-btn" id="activeCounter" title="Налаштування АРМ та Опорної Точки" onclick="openSettingsModal()">
+    0
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  /* ================= ІНІЦІАЛІЗАЦІЯ КАРТИ ТА ВОДЯНОГО ЗНАКУ ================= */
+  const map = L.map('map', { 
+    zoomControl: false, 
+    attributionControl: false,
+    doubleClickZoom: false
+  }).setView([48.1, 35.4], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+
+  const watermarkHex = "0a1255e2";
+  const wmLayer = document.getElementById('watermarkLayer');
+  for (let i = 0; i < 42; i++) {
+    const node = document.createElement('div');
+    node.className = 'watermark-node';
+    node.textContent = watermarkHex;
+    wmLayer.appendChild(node);
+  }
+
+  /* ================= ОПОРНА ТОЧКА СВОГО ПІДРОЗДІЛУ (П. 5, 11, 12) ================= */
+  let unitPosition = {
+    name: "1 п.г. ПЗРК (Опорна точка)",
+    lat: 47.84,
+    lng: 35.14,
+    radiusKm: 180,
+    status: "online" // online | warn | offline
+  };
+  let unitMarker = null;
+  let unitRangeCircle = null;
+  let isMovingUnitMode = false;
+
+  /* ================= ОПЕРАТИВНИЙ МАСИВ ЦІЛЕЙ ================= */
+  let targets = [];
+  let layerObjects = {};
+  let selectedTargetId = null;
+  let contextTargetId = null;
+  let extrapolationCircles = {};
+
+  // Режими формуляра: 3 = повний, 2 = номер+тип+належність, 1 = тільки номер, 0 = тільки знак (п. 1, стор. 6)
+  let formularMode = 3;
+  let isAdToolActive = false;
+  let adLine = null;
+
+  let pendingTarget = null;
+  let reaimTargetId = null;
+  let isAddingMode = false;
+
+  let restoringTargetId = null;
+  let restoringStep = 0;
+  let restoreStartPos = null;
+
+  let addType = 'Ударний дрон';
+  let addId = '';
+  let addAffiliation = 'ПП';
+  let addHeight = 15;
+  let addSource = 'РЛС';
+
+  let isSimulating = false;
+  let simInterval = null;
+  let simMultiplier = 4;
+  let tickCount = 0;
+  let isRadioAudioActive = false;
+
+  const profileByType = {
+    'Ударний дрон':      { speedMin: 150, speedMax: 185 },
+    'Supercam':          { speedMin: 100, speedMax: 130 },
+    'КАБ':               { speedMin: 700, speedMax: 900 },
+    'Крилата ракета':    { speedMin: 800, speedMax: 950 },
+    'Су-34':             { speedMin: 850, speedMax: 1000 },
+    'Су-35':             { speedMin: 900, speedMax: 1050 },
+    'Балістична ракета': { speedMin: 2000, speedMax: 2500 },
+    'ASTERIX':           { speedMin: 50, speedMax: 120 },
+    'РЛС':               { speedMin: 300, speedMax: 600 }
+  };
+
+  /* ================= ГОЛОСОВЕ СПОВІЩЕННЯ ================= */
+  function speakAlert(text) {
+    if (!isRadioAudioActive || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'uk-UA';
+    u.rate = 1.1;
+    window.speechSynthesis.speak(u);
+  }
+
+  /* ================= ГЕОДЕЗИЧНІ РОЗРАХУНКИ (АЗИМУТ ТА ДАЛЬНІСТЬ) ================= */
+  function calcGeoDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371.01;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function calcGeoBearing(lat1, lon1, lat2, lon2) {
+    const f1 = lat1 * Math.PI / 180;
+    const f2 = lat2 * Math.PI / 180;
+    const dl = (lon2 - lon1) * Math.PI / 180;
+    const y = Math.sin(dl) * Math.cos(f2);
+    const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+    return Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360);
+  }
+
+  /* ================= ВІДОБРАЖЕННЯ ПІДРОЗДІЛУ (ОПОРНОЇ ТОЧКИ) ================= */
+  function renderUnitPosition() {
+    if (unitMarker) map.removeLayer(unitMarker);
+    if (unitRangeCircle) map.removeLayer(unitRangeCircle);
+
+    const dotClass = unitPosition.status === 'online' ? 'online' : (unitPosition.status === 'warn' ? 'warn' : 'offline');
+    const unitHtml = `
+      <div class="unit-marker-wrap">
+        <div class="unit-dot tl ${dotClass}"></div>
+        <div class="unit-dot tr ${dotClass}"></div>
+        <div class="unit-dot bl ${dotClass}"></div>
+        <div class="unit-dot br ${dotClass}"></div>
+        <div class="unit-box">
+          <svg width="24" height="16" viewBox="0 0 36 22">
+            <line x1="18" y1="2" x2="18" y2="20" stroke="#083370" stroke-width="2.5"/>
+            <path d="M8 18 Q18 10 28 18" fill="none" stroke="#083370" stroke-width="2.2"/>
+          </svg>
+        </div>
+        <div class="unit-label">${unitPosition.name}</div>
+      </div>
+    `;
+    const icon = L.divIcon({ html: unitHtml, className: '', iconSize: [42, 32], iconAnchor: [19, 12] });
+    unitMarker = L.marker([unitPosition.lat, unitPosition.lng], { icon: icon }).addTo(map);
+    unitMarker.on('click', () => openSettingsModal());
+
+    if (unitPosition.radiusKm > 0) {
+      unitRangeCircle = L.circle([unitPosition.lat, unitPosition.lng], {
+        radius: unitPosition.radiusKm * 1000,
+        color: '#2563eb',
+        weight: 1.3,
+        dashArray: '6, 6',
+        fillOpacity: 0.02,
+        interactive: false
+      }).addTo(map);
+    }
+
+    document.getElementById('unitCoordsLabel').textContent =
+      `ОТ: ${unitPosition.lat.toFixed(2)}°N ${unitPosition.lng.toFixed(2)}°E (R=${unitPosition.radiusKm} км)`;
+  }
+
+  /* ================= ГОДИННИК ================= */
+  function updateClock() {
+    const now = new Date();
+    const clockEl = document.getElementById('clock');
+    if (clockEl) clockEl.textContent = now.toLocaleTimeString('uk-UA');
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  /* ================= РЕЖИМИ ФОРМУЛЯРА 0 / 1 / 2 / 3 (П. 1, СТОР. 6) ================= */
+  window.cycleFormularMode = () => {
+    formularMode = (formularMode + 3) % 4; // 3 -> 2 -> 1 -> 0 -> 3
+    const btn = document.getElementById('btnFormularMode');
+    btn.innerText = `Ф:${formularMode}`;
+    const modeNames = {
+      3: "Формуляр 3: Повний (№, Належність, РДЦ, Швидкість, Висота)",
+      2: "Формуляр 2: Скорочений (№, Належність, Тип/Джерело)",
+      1: "Формуляр 1: Тільки номер цілі",
+      0: "Формуляр 0: Тільки позначка повітряного об'єкта"
+    };
+    showHint(modeNames[formularMode]);
+    render();
+  };
+
+  /* ================= ПЕЛЕНГАТОР A-D (П. 1, СТОР. 5) ================= */
+  window.toggleAdTool = () => {
+    isAdToolActive = !isAdToolActive;
+    const btn = document.getElementById('btnAdTool');
+    const readout = document.getElementById('adReadout');
+    if (isAdToolActive) {
+      btn.classList.add('btn-active');
+      readout.style.display = 'block';
+      showHint("Режим A-D: наводьте курсор для виміру азимута і дальності від ОТ");
+    } else {
+      btn.classList.remove('btn-active');
+      readout.style.display = 'none';
+      if (adLine) { map.removeLayer(adLine); adLine = null; }
+      hideHint();
+    }
+  };
+
+  window.toggleTopPanel = () => {
+    const panel = document.getElementById('mainTopPanel');
+    panel.classList.toggle('collapsed');
+    const toggleText = panel.querySelector('.panel-toggle');
+    toggleText.innerText = panel.classList.contains('collapsed')
+      ? "▲ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (РОЗГОРНУТИ)"
+      : "▼ СПИСОК ПОВІТРЯНИХ ЦІЛЕЙ (ЗГОРНУТИ)";
+  };
+
+  window.toggleSimulation = () => {
+    isSimulating = !isSimulating;
+    const btnSim = document.getElementById('btnSim');
+    const simIcon = document.getElementById('simIcon');
+    if (isSimulating) {
+      btnSim.classList.add('btn-active');
+      simIcon.innerHTML = `<rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/>`;
+      simInterval = setInterval(simulationTick, 1000);
+    } else {
+      btnSim.classList.remove('btn-active');
+      simIcon.innerHTML = `<polygon points="5,3 19,12 5,21" fill="currentColor"/>`;
+      clearInterval(simInterval);
+    }
+  };
+
+  /* ================= СИМУЛЯЦІЯ РУХУ ================= */
+  function simulationTick() {
+    tickCount++;
+    targets.forEach(t => {
+      if (!t.active) return;
+
+      const isTurning = (t.targetHeading !== undefined && t.heading !== t.targetHeading);
+      if (isTurning) t.heading = lerpHeading(t.heading, t.targetHeading, 4);
+
+      const distanceKm = (t.speed / 3600) * (simMultiplier * 0.4);
+      const newCoords = getDestination(t.lat, t.lng, t.heading, distanceKm);
+      t.lat = newCoords[0];
+      t.lng = newCoords[1];
+
+      const currentSegment = t.segments[t.segments.length - 1];
+      if (isTurning || tickCount % 3 === 0) {
+        currentSegment.push([t.lat, t.lng]);
+        if (currentSegment.length > 60) currentSegment.shift();
+      }
+
+      if (extrapolationCircles[t.id]) {
+        const curR = extrapolationCircles[t.id].getRadius();
+        extrapolationCircles[t.id].setRadius(curR + distanceKm * 1000 * 0.15);
+      }
+
+      if (layerObjects[t.id]) {
+        if (layerObjects[t.id].marker) {
+          layerObjects[t.id].marker.setLatLng([t.lat, t.lng]);
+          layerObjects[t.id].marker.setIcon(createTargetIcon(t));
+        }
+        if (layerObjects[t.id].ray) {
+          const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
+          layerObjects[t.id].ray.setLatLngs([[t.lat, t.lng], rayEnd]);
+        }
+        if (layerObjects[t.id].cmdLine) {
+          layerObjects[t.id].cmdLine.setLatLngs([[unitPosition.lat, unitPosition.lng], [t.lat, t.lng]]);
+        }
+        if (layerObjects[t.id].trail) {
+          const displaySegments = t.segments.map(s => [...s]);
+          const lastSeg = displaySegments[displaySegments.length - 1];
+          if (lastSeg.length === 0 || lastSeg[lastSeg.length - 1][0] !== t.lat) {
+            lastSeg.push([t.lat, t.lng]);
+          }
+          layerObjects[t.id].trail.setLatLngs(smoothMultiPath(displaySegments));
+        }
+      }
+    });
+
+    if (selectedTargetId) updateTopBar(selectedTargetId);
+  }
+
+  function randomSpeedFor(type) {
+    const p = profileByType[type] || profileByType['Ударний дрон'];
+    const v = p.speedMin + Math.random() * (p.speedMax - p.speedMin);
+    return Math.round(v / 5) * 5;
+  }
+
+  let tempPreviewMarker = null;
+  let tempGuideLine = null;
+
+  /* ================= ТАКТИЧНІ СИМВОЛИ (SVG) ================= */
+  function getTacticalSvg(t) {
+    const col = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#222222');
+
+    if (t.source === 'еРакета' || t.source === 'Звук') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="${col}" stroke-width="8"/>
+          <line x1="50" y1="12" x2="50" y2="88" stroke="${col}" stroke-width="6"/>
+          <line x1="12" y1="50" x2="88" y2="50" stroke="${col}" stroke-width="6"/>
+          <line x1="23" y1="23" x2="77" y2="77" stroke="${col}" stroke-width="5"/>
+          <line x1="23" y1="77" x2="77" y2="23" stroke="${col}" stroke-width="5"/>
+        </svg>`;
+    }
+
+    if (t.type === 'ASTERIX') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <polygon points="50,10 88,86 50,70 12,86" fill="${col}" stroke="#fff" stroke-width="3"/>
+        </svg>`;
+    }
+
+    if (t.type === 'Ударний дрон' || t.type === 'Shahed-136' || t.type === 'БпЛА') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M50,8 L88,82 L88,92 L50,76 L12,92 L12,82 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    if (t.type === 'Supercam' || t.type === 'Орлан-10' || t.type === 'БпЛА ЗСУ') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M48,12 L52,12 L52,42 L94,52 L94,58 L52,58 L52,86 L66,94 L66,98 L50,94 L34,98 L34,94 L48,86 L48,58 L6,58 L6,52 L48,42 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    if (t.type === 'Су-34' || t.type === 'Су-35' || t.type === 'Винищувач ЗСУ') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M50,4 L56,22 L64,26 L64,32 L56,34 L62,50 L96,72 L96,78 L62,72 L62,86 L74,96 L74,99 L50,92 L26,99 L26,96 L38,86 L38,72 L4,78 L4,72 L38,50 L44,34 L36,32 L36,26 L44,22 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    if (t.type === 'Балістична ракета' || t.type === 'Крилата ракета' || t.type === 'КАБ') {
+      return `
+        <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+          <path d="M50,5 L58,22 L58,68 L70,88 L58,84 L58,95 L42,95 L42,84 L30,88 L42,68 L42,22 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    return `
+      <svg class="virazh-symbol-svg" viewBox="0 0 100 100">
+        <path d="M50,6 L57,26 L94,62 L94,70 L56,60 L56,84 L68,93 L68,98 L50,93 L32,98 L32,93 L44,84 L44,60 L6,70 L6,62 L43,26 Z" fill="${col}" stroke="#fff" stroke-width="2.5"/>
+      </svg>`;
+  }
+
+  function lerpHeading(current, target, step = 8) {
+    let diff = target - current;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    if (Math.abs(diff) < step) return target;
+    return (current + Math.sign(diff) * step + 360) % 360;
+  }
+
+  function smoothSegment(points, steps = 10) {
+    if (!points || points.length <= 2) return points || [];
+    const clean = [points[0]];
+    for (let i = 1; i < points.length; i++) {
+      const dLat = Math.abs(points[i][0] - clean[clean.length - 1][0]);
+      const dLng = Math.abs(points[i][1] - clean[clean.length - 1][1]);
+      if (dLat > 0.00005 || dLng > 0.00005) clean.push(points[i]);
+    }
+    if (clean.length <= 2) return clean;
+
+    const result = [clean[0]];
+    for (let i = 1; i < clean.length - 1; i++) {
+      const p0 = clean[i - 1], p1 = clean[i], p2 = clean[i + 1];
+      const v1 = [p0[0] - p1[0], p0[1] - p1[1]];
+      const v2 = [p2[0] - p1[0], p2[1] - p1[1]];
+      const d1 = Math.hypot(v1[0], v1[1]), d2 = Math.hypot(v2[0], v2[1]);
+      if (d1 < 1e-6 || d2 < 1e-6) continue;
+
+      const r = Math.min(d1 * 0.45, d2 * 0.45);
+      const start = [p1[0] + (v1[0] / d1) * r, p1[1] + (v1[1] / d1) * r];
+      const end = [p1[0] + (v2[0] / d2) * r, p1[1] + (v2[1] / d2) * r];
+
+      result.push(start);
+      for (let s = 1; s < steps; s++) {
+        const t = s / steps, inv = 1 - t;
+        result.push([
+          inv * inv * start[0] + 2 * inv * t * p1[0] + t * t * end[0],
+          inv * inv * start[1] + 2 * inv * t * p1[1] + t * t * end[1]
+        ]);
+      }
+      result.push(end);
+    }
+    result.push(clean[clean.length - 1]);
+    return result;
+  }
+
+  function smoothMultiPath(segments) {
+    return segments.map(seg => smoothSegment(seg)).filter(seg => seg && seg.length > 0);
+  }
+
+  function calculateHeading(latlng1, latlng2) {
+    const p1 = map.project(latlng1), p2 = map.project(latlng2);
+    let angle = Math.atan2(p2.x - p1.x, p1.y - p2.y) * (180 / Math.PI);
+    return Math.round(angle < 0 ? angle + 360 : angle);
+  }
+
+  function getDestination(lat, lng, heading, distanceKm) {
+    const R = 6371.01, d = distanceKm;
+    const lat1 = lat * Math.PI / 180, lon1 = lng * Math.PI / 180, brng = heading * Math.PI / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / R) + Math.cos(lat1) * Math.sin(d / R) * Math.cos(brng));
+    const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1), Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2));
+    return [(lat2 * 180 / Math.PI), (lon2 * 180 / Math.PI)];
+  }
+
+  /* ================= СТВОРЕННЯ МАРКЕРА ЦІЛІ (З УРАХУВАННЯМ РЕЖИМУ ФОРМУЛЯРА 0/1/2/3 ТА КОМАНД ЦВ/ЗАБОР) ================= */
+  function createTargetIcon(t) {
+    const isSelected = selectedTargetId === t.id;
+    const isHighSpeed = t.speed > 1200;
+    const affClass = t.aff === 'ПП' ? 'formular-pp' : (t.aff === 'ЗЛ' ? 'formular-zl' : 'formular-nv');
+    const hFormatted = String(Math.round(t.height || 0)).padStart(3, '0');
+
+    let segClass = "status-segment";
+    if (t.latency > 90) segClass += " lost";
+    else if (t.latency > 30) segClass += " warn";
+
+    const statusBarHtml = `
+      <div class="status-bar-box">
+        <div class="${segClass}"></div>
+        <div class="${segClass}"></div>
+        <div class="${t.latency > 60 ? 'status-segment dim' : segClass}"></div>
+      </div>
+    `;
+
+    // Візуалізація команди ЦВ (мішень — п. 13, рис. 13.1) або Заборони роботи (зелений шестикутник — п. 13, рис. 13.2)
+    let cmdRingHtml = '';
+    if (t.command === 'CV') {
+      cmdRingHtml = `
+        <svg class="cv-target-ring" viewBox="0 0 50 50">
+          <circle cx="25" cy="25" r="20" fill="none" stroke="#d91b2b" stroke-width="2.2"/>
+          <circle cx="25" cy="25" r="13" fill="none" stroke="#d91b2b" stroke-width="1.4"/>
+          <line x1="25" y1="1" x2="25" y2="11" stroke="#d91b2b" stroke-width="2.2"/>
+          <line x1="25" y1="39" x2="25" y2="49" stroke="#d91b2b" stroke-width="2.2"/>
+          <line x1="1" y1="25" x2="11" y2="25" stroke="#d91b2b" stroke-width="2.2"/>
+          <line x1="39" y1="25" x2="49" y2="25" stroke="#d91b2b" stroke-width="2.2"/>
+        </svg>`;
+    } else if (t.command === 'ZABOR') {
+      cmdRingHtml = `
+        <svg class="zabor-hex-ring" viewBox="0 0 50 50">
+          <polygon points="25,2 45,13 45,37 25,48 5,37 5,13" fill="rgba(47,168,79,0.14)" stroke="#2fa84f" stroke-width="2.5"/>
+        </svg>`;
+    }
+
+    // Формування тексту формуляра згідно з п. 1 (стор. 6 документації)
+    let formularContent = '';
+    const effectiveMode = isSelected ? 3 : formularMode;
+    if (effectiveMode === 1) {
+      formularContent = `<div class="virazh-formular ${affClass}"><div>${t.id}${t.entryMode || ''}</div></div>`;
+    } else if (effectiveMode === 2) {
+      formularContent = `
+        <div class="virazh-formular ${affClass}">
+          <div>${t.id}${t.entryMode || ''}</div>
+          <div>1 ${t.aff} (${t.source || 'РЛС'})</div>
+        </div>`;
+    } else if (effectiveMode === 3) {
+      formularContent = `
+        <div class="virazh-formular ${affClass}">
+          ${t.type ? `<div class="formular-type">${t.type}</div>` : ''}
+          <div>${t.id}${t.entryMode || ''} 1 ${t.aff} (${t.source || 'РЛС'})</div>
+          <div>${Math.round(t.speed)} ${hFormatted} | ${Math.round(t.heading)}°</div>
+        </div>`;
+    }
+
+    const html = `
+      <div class="virazh-marker-wrap">
+        ${cmdRingHtml}
+        ${isHighSpeed ? '<div class="speed-circle"></div>' : ''}
+        ${isSelected ? '<div class="selected-circle"></div>' : ''}
+        <div class="virazh-symbol-box" style="transform: rotate(${t.heading}deg);">
+          ${getTacticalSvg(t)}
+        </div>
+        ${statusBarHtml}
+        ${formularContent}
+      </div>
+    `;
+    return L.divIcon({ html: html, className: '', iconSize: [34, 34], iconAnchor: [17, 17] });
+  }
+
+  function showHint(text) {
+    const h = document.getElementById('hudHint');
+    h.innerText = text; h.style.display = 'block';
+  }
+  function hideHint() { document.getElementById('hudHint').style.display = 'none'; }
+
+  /* ================= ГОЛОВНИЙ РЕНДЕР ================= */
+  function render() {
+    const tbody = document.getElementById('targetsTableBody');
+    tbody.innerHTML = '';
+
+    Object.values(layerObjects).forEach(obj => {
+      if (obj.marker) map.removeLayer(obj.marker);
+      if (obj.ray) map.removeLayer(obj.ray);
+      if (obj.cmdLine) map.removeLayer(obj.cmdLine);
+      if (obj.trail) map.removeLayer(obj.trail);
+    });
+    layerObjects = {};
+
+    let activeCount = 0;
+    let renderedRows = 0;
+
+    targets.forEach((t) => {
+      layerObjects[t.id] = {};
+      const trackColor = t.aff === 'ПП' ? '#d91b2b' : (t.aff === 'ЗЛ' ? '#0b62d4' : '#555555');
+
+      if (t.active) {
+        activeCount++;
+        const rayEnd = getDestination(t.lat, t.lng, t.heading, 95);
+        layerObjects[t.id].ray = L.polyline([[t.lat, t.lng], rayEnd], { 
+          color: '#555e6d', weight: 1.5, opacity: 0.7, interactive: false
+        }).addTo(map);
+
+        // Пунктирна лінія від опорної точки підрозділу при команді ЦВ або Заборона (п. 13, рис. 13.1-13.2)
+        if (t.command === 'CV' || t.command === 'ZABOR') {
+          layerObjects[t.id].cmdLine = L.polyline([[unitPosition.lat, unitPosition.lng], [t.lat, t.lng]], {
+            color: t.command === 'CV' ? '#d91b2b' : '#2fa84f',
+            weight: 2,
+            dashArray: '6, 6',
+            opacity: 0.9,
+            interactive: false
+          }).addTo(map);
+        }
+
+        if (t.segments && t.segments.length > 0) {
+          const displaySegments = t.segments.map(s => [...s]);
+          const lastSeg = displaySegments[displaySegments.length - 1];
+          if (lastSeg.length === 0 || lastSeg[lastSeg.length - 1][0] !== t.lat) {
+            lastSeg.push([t.lat, t.lng]);
+          }
+          layerObjects[t.id].trail = L.polyline(smoothMultiPath(displaySegments), {
+            color: trackColor, weight: 2.2, opacity: 0.9, smoothFactor: 0, className: 'trail-line', interactive: false
+          }).addTo(map);
+        }
+
+        layerObjects[t.id].marker = L.marker([t.lat, t.lng], { icon: createTargetIcon(t) }).addTo(map);
+        layerObjects[t.id].marker.on('click', () => {
+          if (!reaimTargetId && !isAddingMode && !restoringTargetId) selectTarget(t.id);
+        });
+        layerObjects[t.id].marker.on('contextmenu', (e) => {
+          L.DomEvent.stopPropagation(e);
+          openTargetContextMenu(t.id, e.originalEvent.clientX, e.originalEvent.clientY);
+        });
+
+        renderedRows++;
+        const tr = document.createElement('tr');
+        const badgeClass = t.aff === 'ПП' ? 'badge-pp' : (t.aff === 'ЗЛ' ? 'badge-zl' : 'badge-nv');
+        const cmdBadge = t.command === 'CV'
+          ? `<span class="badge-cmd-cv">ЦВ</span>`
+          : (t.command === 'ZABOR' ? `<span class="badge-cmd-zabor">ЗАБОР</span>` : '');
+
+        tr.onclick = (e) => { if (!e.target.closest('button')) selectTarget(t.id); };
+        tr.innerHTML = `
+          <td><b>${t.id}${t.entryMode || ''}</b>${cmdBadge}</td>
+          <td><span class="badge-aff ${badgeClass}">${t.aff}</span></td>
+          <td>${t.type || 'РЛС'}</td>
+          <td>H${t.height || 0} / ${Math.round(t.speed)}</td>
+          <td>${Math.round(t.heading)}°</td>
+          <td class="td-actions">
+            <button class="btn-action btn-reaim" title="Змінити вектор (Reaim)" onclick="startReaim('${t.id}')">
+              <svg viewBox="0 0 24 24"><polygon points="12,2 19,21 12,17 5,21"/></svg>
+            </button>
+            <button class="btn-action btn-focus" title="Фокус на цілі" onclick="focusTarget('${t.id}')">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            </button>
+            <button class="btn-action btn-archive" title="До архіву (втрата супроводу)" onclick="archiveTarget('${t.id}')">
+              <svg viewBox="0 0 24 24"><path d="M4 8v13h16V8M3 3h18v5H3zM9 12h6"/></svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      } else {
+        if (t.segments && t.segments.length > 0) {
+          layerObjects[t.id].trail = L.polyline(smoothMultiPath(t.segments), {
+            color: '#8893a0', weight: 2.0, opacity: 0.8, smoothFactor: 0, className: 'trail-lost', interactive: false
+          }).addTo(map);
+        }
+
+        renderedRows++;
+        const tr = document.createElement('tr');
+        tr.className = 'row-lost';
+        tr.innerHTML = `
+          <td><span class="status-lost-badge">АРХІВ</span>${t.id}${t.entryMode || ''}</td>
+          <td><span class="badge-aff badge-nv">${t.aff}</span></td>
+          <td>${t.type || 'РЛС'}</td>
+          <td>—</td>
+          <td>${Math.round(t.heading)}°</td>
+          <td class="td-actions">
+            <button class="btn-action btn-focus" title="Фокус на слід" onclick="focusTarget('${t.id}')">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            </button>
+            <button class="btn-action btn-restore" title="Відновити з архіву" onclick="startRestoreTarget('${t.id}')">
+              <svg viewBox="0 0 24 24"><path d="m8 4-5 5 5 5M3 9h11a6 6 0 0 1 0 12"/></svg>
+            </button>
+            <button class="btn-action btn-delete" title="Видалити" onclick="deleteTarget('${t.id}')">
+              <svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4.5h6V7M7 7l1 13a1 1 0 0 0 1 .9h6a1 1 0 0 0 1-.9l1-13"/></svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+
+    if (renderedRows === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="6" class="row-empty">ПОВІТРЯНА ОБСТАНОВКА ЧИСТА</td>`;
+      tbody.appendChild(tr);
+    }
+
+    document.getElementById('activeCounter').innerText = activeCount;
+    if (selectedTargetId) updateTopBar(selectedTargetId);
+  }
+
+  /* ================= КОНТЕКСТНЕ МЕНЮ ОПІЗНАВАННЯ (П. 10, РИС. 10.3) ================= */
+  function openTargetContextMenu(id, x, y) {
+    contextTargetId = id;
+    const menu = document.getElementById('targetContextMenu');
+    menu.style.left = Math.min(x, window.innerWidth - 205) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 230) + 'px';
+    menu.style.display = 'flex';
+  }
+
+  window.setContextRecognition = (aff, newType) => {
+    document.getElementById('targetContextMenu').style.display = 'none';
+    if (!contextTargetId) return;
+    const t = targets.find(x => x.id === contextTargetId);
+    if (t) {
+      t.aff = aff;
+      if (newType) t.type = newType;
+      showHint(`Опізнавання цілі ${t.id}: ${aff}${newType ? ' (' + newType + ')' : ''}`);
+      render();
+    }
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#targetContextMenu')) {
+      document.getElementById('targetContextMenu').style.display = 'none';
+    }
+  });
+
+  /* ================= ІНФОПАНЕЛЬ ОБРАНОЇ ЦІЛІ ТА КОМАНДИ ЦВ / ЗАБОРОНА ================= */
+  window.selectTarget = (id) => {
+    selectedTargetId = id;
+    document.getElementById('targetTopBar').style.display = 'flex';
+    updateTopBar(id);
+    render();
+  };
+
+  window.deselectTarget = () => {
+    selectedTargetId = null;
+    document.getElementById('targetTopBar').style.display = 'none';
+    render();
+  };
+
+  function updateTopBar(id) {
+    const t = targets.find(x => x.id === id);
+    if (!t) return;
+
+    // Реальний розрахунок азимута A та дальності D від Опорної точки підрозділу до цілі
+    const azim = calcGeoBearing(unitPosition.lat, unitPosition.lng, t.lat, t.lng);
+    const distKm = calcGeoDistanceKm(unitPosition.lat, unitPosition.lng, t.lat, t.lng);
+    const etaMin = t.speed > 0 ? Math.round((distKm / t.speed) * 60) : 0;
+
+    document.getElementById('topBarId').innerText = `${t.id}${t.entryMode || 'р'}`;
+    document.getElementById('topBarAzimuth').innerText = `A${azim}°`;
+    document.getElementById('topBarDistance').innerText = `D${distKm.toFixed(1)} км`;
+    document.getElementById('topBarHeight').innerText = `H${t.height}.0`;
+    document.getElementById('topBarSpeed').innerText = `V${Math.round(t.speed)}`;
+
+    const now = new Date();
+    document.getElementById('topBarEta').innerText =
+      `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} (${etaMin} хв)`;
+
+    document.getElementById('btnTargetCv').classList.toggle('btn-cv-active', t.command === 'CV');
+    document.getElementById('btnTargetZabor').classList.toggle('btn-zabor-active', t.command === 'ZABOR');
+  }
+
+  window.toggleTargetCv = () => {
+    if (!selectedTargetId) return;
+    const t = targets.find(x => x.id === selectedTargetId);
+    if (!t) return;
+    t.command = (t.command === 'CV') ? null : 'CV';
+    if (t.command === 'CV') {
+      showHint(`ЦІЛЕВКАЗІВКА (ЦВ) по цілі №${t.id} прийнята до виконання!`);
+      speakAlert(`Цілевказівка по цілі ${t.id}`);
+    } else {
+      showHint(`Відміна цілевказівки по цілі №${t.id}`);
+    }
+    render();
+  };
+
+  window.toggleTargetZabor = () => {
+    if (!selectedTargetId) return;
+    const t = targets.find(x => x.id === selectedTargetId);
+    if (!t) return;
+    t.command = (t.command === 'ZABOR') ? null : 'ZABOR';
+    if (t.command === 'ZABOR') {
+      showHint(`ЗАБОРОНА РОБОТИ по цілі №${t.id} (працює винищувальна авіація / сусідній ЗРВ)`);
+      speakAlert(`Заборона роботи по цілі ${t.id}`);
+    } else {
+      showHint(`Відміна заборони роботи по цілі №${t.id}`);
+    }
+    render();
+  };
+
+  window.reaimCurrentTarget = () => { if (selectedTargetId) startReaim(selectedTargetId); };
+
+  window.toggleCurrentExtrapolation = () => {
+    if (!selectedTargetId) return;
+    const t = targets.find(x => x.id === selectedTargetId);
+    if (!t) return;
+    if (extrapolationCircles[t.id]) {
+      map.removeLayer(extrapolationCircles[t.id]);
+      delete extrapolationCircles[t.id];
+      document.getElementById('btnExtrapolateTop').classList.remove('active');
+      showHint(`Екстраполяцію для ${t.id} вимкнено`);
+    } else {
+      extrapolationCircles[t.id] = L.circle([t.lat, t.lng], {
+        radius: 12000, color: '#8893a0', dashArray: '5, 5', weight: 1.8, fillOpacity: 0.06, interactive: false
+      }).addTo(map);
+      document.getElementById('btnExtrapolateTop').classList.add('active');
+      showHint(`Увімкнено екстраполяційне коло для цілі ${t.id}`);
+    }
+  };
+
+  /* ================= КЕРУВАННЯ МОДАЛЬНИМИ ВІКНАМИ ================= */
+  window.openAddModal = () => {
+    document.getElementById('modalId').value = '';
+    document.getElementById('targetModal').style.display = 'flex';
+  };
+  window.openPvsModal = () => { document.getElementById('pvsModal').style.display = 'flex'; };
+  window.openCommandsModal = () => { document.getElementById('commandsModal').style.display = 'flex'; };
+  window.openSettingsModal = () => {
+    document.getElementById('unitNameInput').value = unitPosition.name;
+    document.getElementById('unitRadiusInput').value = unitPosition.radiusKm;
+    document.getElementById('unitStatusSelect').value = unitPosition.status;
+    document.getElementById('settingsModal').style.display = 'flex';
+  };
+  window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
+
+  window.setReadinessCmd = (label, level) => {
+    const dot = document.getElementById('readinessDot');
+    const txt = document.getElementById('readinessText');
+    dot.className = 'readiness-dot' + (level === 'alert' ? ' alert' : (level === 'warn' ? ' warn' : ''));
+    txt.innerText = label;
+    closeModal('commandsModal');
+    showHint(`Отримано команду з ВКП: ${label}`);
+    speakAlert(`Увага! Команда: ${label}`);
+  };
+
+  window.saveUnitSettings = () => {
+    unitPosition.name = document.getElementById('unitNameInput').value.trim() || "1 п.г. ПЗРК";
+    unitPosition.radiusKm = parseFloat(document.getElementById('unitRadiusInput').value) || 0;
+    unitPosition.status = document.getElementById('unitStatusSelect').value;
+    closeModal('settingsModal');
+    renderUnitPosition();
+    if (selectedTargetId) updateTopBar(selectedTargetId);
+    showHint("Параметри опорної точки підрозділу оновлено");
+  };
+
+  window.startMoveUnit = () => {
+    closeModal('settingsModal');
+    isMovingUnitMode = true;
+    document.body.classList.add('aiming-mode');
+    showHint("Клікніть на карті для встановлення Опорної Точки підрозділу (800м–9км від позиції)");
+  };
+
+  window.confirmAddTarget = () => {
+    addType = document.getElementById('modalType').value;
+    addAffiliation = document.getElementById('modalAffiliation').value;
+    addHeight = parseFloat(document.getElementById('modalHeight').value) || 12;
+    addSource = document.getElementById('modalSource').value;
+    const addSpeed = randomSpeedFor(addType);
+    addId = document.getElementById('modalId').value.trim();
+    closeModal('targetModal');
+    isAddingMode = true;
+    document.body.classList.add('aiming-mode');
+    showHint(addId ? `КЛІК 1: Вкажіть точку виявлення борта ${addId}` : 'КЛІК 1: Вкажіть точку виявлення цілі на карті');
+    window.tempAddSpeed = addSpeed;
+  };
+
+  window.submitPvsReport = () => {
+    closeModal('pvsModal');
+    const type = document.querySelector('input[name="pvsType"]:checked').value;
+    const course = parseFloat(document.getElementById('pvsCourse').value) || 180;
+    const newId = Math.floor(2000 + Math.random() * 7000).toString();
+
+    targets.push({
+      id: newId, entryMode: 'р', aff: 'ПП', type: type,
+      speed: 155, height: 4, heading: course, targetHeading: course,
+      source: 'ПВС', active: true, latency: 4, command: null,
+      lat: unitPosition.lat + 0.03, lng: unitPosition.lng + 0.03,
+      segments: [[[unitPosition.lat + 0.03, unitPosition.lng + 0.03]]]
+    });
+    showHint(`Передано доповідь ПВС на АРМ-ЗРВ: ${type}, курс ${course}°`);
+    speakAlert(`Доповідь ПВС: ${type}, курс ${course}`);
+    render();
+  };
+
+  window.clearGhosts = () => { targets = targets.filter(t => t.active); render(); };
+
+  window.searchLocality = () => {
+    let q = prompt("Пошук населеного пункту або номера цілі:");
+    if (!q) return;
+    q = q.toLowerCase();
+    if (q.includes("харк")) map.setView([49.99, 36.23], 10);
+    else if (q.includes("київ")) map.setView([50.45, 30.52], 10);
+    else if (q.includes("дніпр")) map.setView([48.46, 35.04], 10);
+    else if (q.includes("запор")) map.setView([47.84, 35.14], 10);
+    else if (q.includes("полтав")) map.setView([49.58, 34.55], 10);
+    else if (q.includes("сум")) map.setView([50.90, 34.79], 10);
+    else {
+      let t = targets.find(x => x.id.toLowerCase() === q);
+      if (t) focusTarget(t.id);
+      else showHint(`Об'єкт «${q}» не знайдено`);
+    }
+  };
+
+  window.toggleRadioAudio = () => {
+    isRadioAudioActive = !isRadioAudioActive;
+    const btn = document.getElementById('btnRadioAudio');
+    if (isRadioAudioActive) {
+      btn.classList.add('btn-active');
+      showHint("Голосові сповіщення (КХ/УКХ) УВІМКНЕНО");
+      speakAlert("Звукове оповіщення увімкнено");
+    } else {
+      btn.classList.remove('btn-active');
+      showHint("Голосові сповіщення ВИМКНЕНО");
+    }
+  };
+
+  window.changeSimSpeed = (val) => {
+    simMultiplier = parseFloat(val) || 4;
+    showHint(`Швидкість розрахунку: ${simMultiplier}x`);
+  };
+
+  window.toggleRadar = () => document.body.classList.toggle('radar-active');
+
+  window.fitAllTargets = () => {
+    let allPoints = [[unitPosition.lat, unitPosition.lng]];
+    targets.forEach(t => {
+      t.segments.forEach(seg => { allPoints = allPoints.concat(seg); });
+    });
+    const bounds = L.latLngBounds(allPoints);
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+  };
+
+  window.toggleFullscreen = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else if (document.exitFullscreen) document.exitFullscreen();
+  };
+
+  window.clearAll = () => {
+    if (confirm("Увага! Очистити всю оперативну повітряну обстановку?")) {
+      targets = [];
+      deselectTarget();
+      render();
+    }
+  };
+
+  /* ================= ФУНКЦІЯ ПЕРЕСТАНОВКИ ТА ЗМІНИ НАПРЯМКУ ================= */
+  function applyReaimToTarget(t, destinationLatLng) {
+    const currentSeg = t.segments[t.segments.length - 1];
+    const lastP = (currentSeg && currentSeg.length > 0) ? currentSeg[currentSeg.length - 1] : [t.lat, t.lng];
+    const targetH = calculateHeading(lastP, destinationLatLng);
+    currentSeg.push([destinationLatLng.lat, destinationLatLng.lng]);
+    t.lat = destinationLatLng.lat;
+    t.lng = destinationLatLng.lng;
+    t.heading = targetH;
+    t.targetHeading = targetH;
+  }
+
+  window.startReaim = (id) => {
+    reaimTargetId = id;
+    document.body.classList.add('aiming-mode');
+    showHint(`1 КЛІК: натисніть у точку, куди переставити борт ${id}`);
+  };
+
+  window.focusTarget = (id) => {
+    const t = targets.find(x => x.id === id);
+    if (t) {
+      const lastSeg = t.segments[t.segments.length - 1];
+      const p = t.active ? [t.lat, t.lng] : (lastSeg && lastSeg.length ? lastSeg[lastSeg.length - 1] : [t.lat, t.lng]);
+      map.setView(p, 10);
+      selectTarget(id);
+    }
+  };
+
+  window.archiveTarget = (id) => {
+    const t = targets.find(x => x.id === id);
+    if (t) {
+      const currentSeg = t.segments[t.segments.length - 1];
+      if (currentSeg.length === 0 || currentSeg[currentSeg.length - 1][0] !== t.lat) {
+        currentSeg.push([t.lat, t.lng]);
+      }
+      t.active = false;
+      t.command = null;
+      if (selectedTargetId === id) deselectTarget();
+      render();
+    }
+  };
+
+  window.startRestoreTarget = (id) => {
+    restoringTargetId = id;
+    restoringStep = 1;
+    document.body.classList.add('aiming-mode');
+    showHint(`КЛІК 1: Вкажіть нове положення борта ${id} на карті`);
+  };
+
+  window.deleteTarget = (id) => {
+    targets = targets.filter(x => x.id !== id);
+    if (selectedTargetId === id) deselectTarget();
+    render();
+  };
+
+  /* ================= КАРТОГРАФІЧНІ ОБРОБНИКИ ================= */
+  map.on('contextmenu', function(e) {
+    if (selectedTargetId) {
+      const t = targets.find(x => x.id === selectedTargetId);
+      if (t && t.active) {
+        applyReaimToTarget(t, e.latlng);
+        showHint(`Ціль ${t.id}: курс змінено на ${Math.round(t.heading)}°`);
+        render();
+      }
+    }
+  });
+
+  map.on('click', function(e) {
+    // 0. Переміщення Опорної Точки підрозділу
+    if (isMovingUnitMode) {
+      unitPosition.lat = e.latlng.lat;
+      unitPosition.lng = e.latlng.lng;
+      isMovingUnitMode = false;
+      document.body.classList.remove('aiming-mode');
+      renderUnitPosition();
+      render();
+      showHint(`Опорну точку встановлено: ${unitPosition.lat.toFixed(3)}°N, ${unitPosition.lng.toFixed(3)}°E`);
+      return;
+    }
+
+    // 1. Зміна напрямку (Reaim)
+    if (reaimTargetId) {
+      const t = targets.find(x => x.id === reaimTargetId);
+      if (t) {
+        applyReaimToTarget(t, e.latlng);
+        showHint(`Борт ${t.id}: переставлено на новий курс ${Math.round(t.heading)}°`);
+      }
+      if (tempGuideLine) map.removeLayer(tempGuideLine);
+      tempGuideLine = null;
+      reaimTargetId = null;
+      document.body.classList.remove('aiming-mode');
+      hideHint();
+      render();
+      return;
+    }
+
+    // 2. Відновлення цілі
+    if (restoringTargetId) {
+      const t = targets.find(x => x.id === restoringTargetId);
+      if (!t) {
+        restoringTargetId = null;
+        document.body.classList.remove('aiming-mode');
+        hideHint();
+        return;
+      }
+      if (restoringStep === 1) {
+        restoreStartPos = [e.latlng.lat, e.latlng.lng];
+        tempPreviewMarker = L.marker(restoreStartPos, {
+          icon: createTargetIcon({ ...t, heading: 0, lat: restoreStartPos[0], lng: restoreStartPos[1] }),
+          interactive: false
+        }).addTo(map);
+        restoringStep = 2;
+        showHint(`КЛІК 2: Вкажіть новий курс для борта ${t.id}`);
+      } else if (restoringStep === 2) {
+        const heading = calculateHeading(restoreStartPos, e.latlng);
+        t.lat = restoreStartPos[0]; t.lng = restoreStartPos[1];
+        t.heading = heading; t.targetHeading = heading;
+        t.active = true;
+        t.segments.push([[restoreStartPos[0], restoreStartPos[1]], [e.latlng.lat, e.latlng.lng]]);
+
+        if (tempPreviewMarker) map.removeLayer(tempPreviewMarker);
+        if (tempGuideLine) map.removeLayer(tempGuideLine);
+        tempPreviewMarker = null; tempGuideLine = null;
+        restoringTargetId = null; restoringStep = 0; restoreStartPos = null;
+        document.body.classList.remove('aiming-mode');
+        hideHint();
+        render();
+      }
+      return;
+    }
+
+    // 3. Введення нової цілі
+    if (isAddingMode) {
+      if (!pendingTarget) {
+        const newId = addId || Math.floor(1000 + Math.random() * 9000).toString();
+        pendingTarget = {
+          id: newId, entryMode: 'р', aff: addAffiliation, type: addType,
+          speed: window.tempAddSpeed, height: addHeight, source: addSource,
+          heading: 0, targetHeading: 0, command: null,
+          lat: e.latlng.lat, lng: e.latlng.lng,
+          segments: [[[e.latlng.lat, e.latlng.lng]]],
+          active: true, latency: 6
+        };
+        tempPreviewMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+          icon: createTargetIcon(pendingTarget),
+          interactive: false
+        }).addTo(map);
+        showHint('КЛІК 2: Вкажіть вектор польоту');
+      } else {
+        pendingTarget.lat = e.latlng.lat;
+        pendingTarget.lng = e.latlng.lng;
+        pendingTarget.heading = calculateHeading([pendingTarget.segments[0][0][0], pendingTarget.segments[0][0][1]], e.latlng);
+        pendingTarget.targetHeading = pendingTarget.heading;
+
+        let existingTarget = targets.find(t => t.id === pendingTarget.id);
+        if (existingTarget) {
+          existingTarget.active = true;
+          existingTarget.lat = pendingTarget.lat;
+          existingTarget.lng = pendingTarget.lng;
+          existingTarget.heading = pendingTarget.heading;
+          existingTarget.speed = pendingTarget.speed;
+          existingTarget.type = pendingTarget.type;
+          existingTarget.aff = pendingTarget.aff;
+          existingTarget.segments.push([
+            [pendingTarget.segments[0][0][0], pendingTarget.segments[0][0][1]],
+            [pendingTarget.lat, pendingTarget.lng]
+          ]);
+        } else {
+          pendingTarget.segments[0].push([e.latlng.lat, e.latlng.lng]);
+          targets.push(pendingTarget);
+        }
+
+        if (pendingTarget.aff === 'ПП') {
+          speakAlert(`Нова повітряна ціль ${pendingTarget.id}, ${pendingTarget.type}, курс ${pendingTarget.heading}`);
+        }
+
+        if (tempPreviewMarker) map.removeLayer(tempPreviewMarker);
+        if (tempGuideLine) map.removeLayer(tempGuideLine);
+        tempPreviewMarker = null; tempGuideLine = null; pendingTarget = null;
+        isAddingMode = false;
+        document.body.classList.remove('aiming-mode');
+        hideHint();
+        render();
+      }
+    }
+  });
+
+  map.on('mousemove', function(e) {
+    // Пеленгатор A-D («Курсор відносно точок» — п. 1, стор. 5)
+    if (isAdToolActive) {
+      const az = calcGeoBearing(unitPosition.lat, unitPosition.lng, e.latlng.lat, e.latlng.lng);
+      const dist = calcGeoDistanceKm(unitPosition.lat, unitPosition.lng, e.latlng.lat, e.latlng.lng);
+      document.getElementById('adReadout').innerText = `A-D: A ${az}° | D ${dist.toFixed(1)} км`;
+      if (adLine) map.removeLayer(adLine);
+      adLine = L.polyline([[unitPosition.lat, unitPosition.lng], [e.latlng.lat, e.latlng.lng]], {
+        color: '#2563eb', weight: 1.5, dashArray: '4, 4', interactive: false
+      }).addTo(map);
+    }
+
+    if (restoringTargetId && restoringStep === 2 && restoreStartPos && tempPreviewMarker) {
+      const targetH = calculateHeading(restoreStartPos, e.latlng);
+      const t = targets.find(x => x.id === restoringTargetId);
+      tempPreviewMarker.setIcon(createTargetIcon({ ...t, heading: targetH }));
+      if (tempGuideLine) map.removeLayer(tempGuideLine);
+      tempGuideLine = L.polyline([restoreStartPos, [e.latlng.lat, e.latlng.lng]], {
+        color: '#d91b2b', weight: 1.8, opacity: 0.8, interactive: false
+      }).addTo(map);
+      showHint(`ВЕКТОР: ${Math.round(targetH)}° (Клікніть 1 раз для підтвердження)`);
+      return;
+    }
+
+    if (pendingTarget && tempPreviewMarker) {
+      const targetH = calculateHeading([pendingTarget.segments[0][0][0], pendingTarget.segments[0][0][1]], e.latlng);
+      pendingTarget.heading = targetH;
+      tempPreviewMarker.setLatLng(e.latlng);
+      tempPreviewMarker.setIcon(createTargetIcon(pendingTarget));
+      if (tempGuideLine) map.removeLayer(tempGuideLine);
+      tempGuideLine = L.polyline([pendingTarget.segments[0][0], [e.latlng.lat, e.latlng.lng]], {
+        color: '#d91b2b', weight: 1.8, opacity: 0.8, interactive: false
+      }).addTo(map);
+      showHint(`ВЕКТОР: ${Math.round(pendingTarget.heading)}° (Клікніть для фіксації)`);
+      return;
+    }
+
+    if (reaimTargetId) {
+      const t = targets.find(x => x.id === reaimTargetId);
+      if (t) {
+        const currentSeg = t.segments[t.segments.length - 1];
+        const lastP = (currentSeg && currentSeg.length > 0) ? currentSeg[currentSeg.length - 1] : [t.lat, t.lng];
+        const targetH = calculateHeading(lastP, e.latlng);
+        if (tempGuideLine) map.removeLayer(tempGuideLine);
+        tempGuideLine = L.polyline([lastP, [e.latlng.lat, e.latlng.lng]], {
+          color: '#d91b2b', weight: 2, dashArray: '5, 5', opacity: 0.9, interactive: false
+        }).addTo(map);
+        showHint(`НОВИЙ КУРС: ${Math.round(targetH)}° (ОДИН КЛІК по точці призначення)`);
+      }
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      reaimTargetId = null; isAddingMode = false; restoringTargetId = null;
+      pendingTarget = null; isMovingUnitMode = false;
+      if (tempPreviewMarker) map.removeLayer(tempPreviewMarker);
+      if (tempGuideLine) map.removeLayer(tempGuideLine);
+      tempPreviewMarker = null; tempGuideLine = null;
+      document.body.classList.remove('aiming-mode');
+      hideHint();
+      render();
+    }
+  });
+
+  renderUnitPosition();
+  render();
+</script>
+</body>
+</html>
