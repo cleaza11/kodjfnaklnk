@@ -386,7 +386,7 @@
   </div>
 </div>
 
-<!-- ІНФОРМАЦІЙНА ПАНЕЛЬ ВИБРАНОЇ ЦІЛІ -->
+<!-- ІНФОРМАЦІЙНА ПАНЕЛЬ ОБРАНОЇ ЦІЛІ -->
 <div id="targetTopBar" class="target-top-bar">
   <div class="top-bar-cell" id="topBarId">---</div>
   <div class="top-bar-cell" id="topBarAzimuth" title="Азимут від опорної точки">A0°</div>
@@ -584,7 +584,7 @@
     <div class="tool-btn" id="btnSim" title="Симуляція руху (Play/Pause)" onclick="toggleSimulation()">
       <svg id="simIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
     </div>
-    <div class="tool-btn" id="btnFormularMode" title="Режим формуляру цілі: 0 / 1 / 2 / 3" onclick="cycleFormularMode()">
+    <div class="tool-btn" id="btnFormularMode" title="Режим формуляру цілі: 3 / 2 / 1 / Т (назва) / 0" onclick="cycleFormularMode()">
       Ф:3
     </div>
   </div>
@@ -676,7 +676,11 @@
   let contextTargetId = null;
   let extrapolationCircles = {};
 
-  let formularMode = 3;
+  // Режими формуляра:
+  // '3' = повний, '2' = номер+належність+джерело, '1' = тільки номер, 'T' = тільки назва/тип цілі, '0' = тільки знак
+  const formularModes = ['3', '2', '1', 'T', '0'];
+  let formularModeIdx = 0;
+
   let isAdToolActive = false;
   let adLine = null;
 
@@ -800,18 +804,21 @@
   setInterval(updateClock, 1000);
   updateClock();
 
-  /* ================= РЕЖИМИ ФОРМУЛЯРА 0 / 1 / 2 / 3 ================= */
+  /* ================= РЕЖИМИ ФОРМУЛЯРА 3 / 2 / 1 / Т / 0 ================= */
   window.cycleFormularMode = () => {
-    formularMode = (formularMode + 3) % 4;
+    formularModeIdx = (formularModeIdx + 1) % formularModes.length;
+    const mode = formularModes[formularModeIdx];
     const btn = document.getElementById('btnFormularMode');
-    btn.innerText = `Ф:${formularMode}`;
+    btn.innerText = mode === 'T' ? 'Ф:Т' : `Ф:${mode}`;
+
     const modeNames = {
-      3: "Формуляр 3: Повний (№, Належність, РДЦ, Швидкість, Висота)",
-      2: "Формуляр 2: Скорочений (№, Належність, Тип/Джерело)",
-      1: "Формуляр 1: Тільки номер цілі",
-      0: "Формуляр 0: Тільки позначка повітряного об'єкта"
+      '3': "Формуляр 3: Повний (Назва, №, Належність, Швидкість, Висота)",
+      '2': "Формуляр 2: Скорочений (№, Належність, Джерело)",
+      '1': "Формуляр 1: Тільки номер цілі",
+      'T': "Формуляр Т: Тільки назва (тип) цілі",
+      '0': "Формуляр 0: Тільки позначка повітряного об'єкта"
     };
-    showHint(modeNames[formularMode]);
+    showHint(modeNames[mode]);
     render();
   };
 
@@ -1073,16 +1080,19 @@
     }
 
     let formularContent = '';
-    const effectiveMode = isSelected ? 3 : formularMode;
-    if (effectiveMode === 1) {
+    const activeMode = formularModes[formularModeIdx];
+
+    if (activeMode === '1') {
       formularContent = `<div class="virazh-formular ${affClass}"><div>${t.id}${t.entryMode || ''}</div></div>`;
-    } else if (effectiveMode === 2) {
+    } else if (activeMode === 'T') {
+      formularContent = `<div class="virazh-formular ${affClass}"><div class="formular-type">${t.type || 'РЛС'}</div></div>`;
+    } else if (activeMode === '2') {
       formularContent = `
         <div class="virazh-formular ${affClass}">
           <div>${t.id}${t.entryMode || ''}</div>
           <div>1 ${t.aff} (${t.source || 'РЛС'})</div>
         </div>`;
-    } else if (effectiveMode === 3) {
+    } else if (activeMode === '3') {
       formularContent = `
         <div class="virazh-formular ${affClass}">
           ${t.type ? `<div class="formular-type">${t.type}</div>` : ''}
